@@ -26,12 +26,18 @@ export function LandingNav() {
           : 'bg-transparent'
       }`}
     >
-      {/* Brand Wordmark */}
+      {/* Brand Wordmark (dock target for أَحْيَاهَا scroll morph) */}
       <Link
         href="/landing"
-        className="font-bold text-base md:text-lg tracking-tight text-ink hover:text-brand transition-colors focus-visible:outline-none"
+        className="flex items-center min-w-[70px] min-h-[32px] focus-visible:outline-none"
+        aria-label={PRODUCT_NAME}
       >
-        {PRODUCT_NAME}
+        <span
+          id="nav-brand-text"
+          className="font-bold text-xl md:text-2xl font-arabic tracking-tight text-[#D21034] opacity-0 transition-opacity duration-150 inline-block leading-none"
+        >
+          {PRODUCT_NAME}
+        </span>
       </Link>
 
       {/* Center Nav Links */}

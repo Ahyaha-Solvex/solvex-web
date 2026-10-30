@@ -19,13 +19,29 @@ export function Hero() {
           {t('eyebrow')}
         </span>
 
-        {/* Main H1 */}
-        <h1 className="text-4xl md:text-7xl font-bold tracking-tight text-ink mb-6 max-w-[14ch] leading-[1.08]">
-          {t('title')}
+        {/* Main H1 — Quranic Ayah (5:32) with أَحْيَاهَا in Algerian flag red */}
+        <h1
+          dir="rtl"
+          lang="ar"
+          className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-arabic tracking-normal text-ink mb-4 max-w-4xl mx-auto leading-[1.3] md:leading-[1.35]"
+        >
+          <span>وَمَنْ </span>
+          <span
+            id="hero-brand-word"
+            className="inline-block text-[#D21034] font-bold transition-opacity duration-150"
+          >
+            أَحْيَاهَا
+          </span>
+          <span> فَكَأَنَّمَا أَحْيَا النَّاسَ جَمِيعًا</span>
         </h1>
 
+        {/* Translation citation */}
+        <p className="text-xs sm:text-sm md:text-base italic text-muted/80 max-w-2xl mx-auto mb-6 font-normal">
+          {t('ayahTranslation')}
+        </p>
+
         {/* Lead */}
-        <p className="text-lg md:text-2xl text-muted leading-relaxed max-w-2xl mb-10 font-normal">
+        <p className="text-base sm:text-lg md:text-xl text-muted leading-relaxed max-w-2xl mb-10 font-normal">
           {t('lead')}
         </p>
 

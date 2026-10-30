@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { useTranslations } from 'next-intl';
-import { Play, Pause, RotateCcw, Zap } from 'lucide-react';
+import { Play, Pause, Zap } from 'lucide-react';
 import { useReplayStore } from '@/lib/stores/replayStore';
 
 export interface ReplayControlsProps {
@@ -10,8 +9,6 @@ export interface ReplayControlsProps {
 }
 
 export function ReplayControls({ className = '' }: ReplayControlsProps) {
-  const t = useTranslations('responder');
-
   const {
     currentTimeMs,
     durationMs,

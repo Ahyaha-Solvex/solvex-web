@@ -31,7 +31,6 @@ function ProceduralWorld({ impactSide = 'right' }: { impactSide?: 'left' | 'righ
   // Road dimensions
   const roadWidth = 7.4; // 2 x 3.7m lanes
   const shoulderWidth = 1.8;
-  const totalWidth = roadWidth + shoulderWidth * 2;
   const roadLength = 320;
 
   // Generate dashed center line instances
@@ -242,7 +241,6 @@ function EgoCar({
       const zPos = slideDist;
 
       // Lateral shift and yaw angle from impact direction
-      const [ix, , iz] = impactDirectionToScene(impactDeg);
       const sideFactor = Math.sin((impactDeg * Math.PI) / 180);
       const xPos = 1.85 + slideFactor * sideFactor * 1.6;
 
@@ -483,7 +481,7 @@ function AmbulanceRoute({ incident }: { incident?: Incident | null }) {
  */
 function ChaseCameraController({ isDegraded }: { isDegraded: boolean }) {
   const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<React.ComponentRef<typeof OrbitControls>>(null);
 
   const currentTimeMs = useReplayStore((s) => s.currentTimeMs);
   const impactAtMs = useReplayStore((s) => s.impactAtMs);
@@ -617,7 +615,7 @@ export function CrashScene({ incident, className = '' }: CrashSceneProps) {
     <div className={`relative w-full h-full select-none ${className}`}>
       {/* 3D WebGL Canvas */}
       <Canvas
-        dpr={[1, 1.75]}
+        dpr={dpr}
         frameloop={isTabVisible ? 'always' : 'never'}
         camera={{ position: [1.85, 3.2, 7.0], fov: 50 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}

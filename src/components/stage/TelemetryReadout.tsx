@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useTranslations } from 'next-intl';
-import { Compass, Gauge, AlertTriangle, RefreshCw, Layers } from 'lucide-react';
 import type { CrashFacts, TelemetryWindow } from '@/lib/data/types';
 import { useReplayStore } from '@/lib/stores/replayStore';
 
@@ -23,7 +22,6 @@ export function TelemetryReadout({
   className = '',
 }: TelemetryReadoutProps) {
   const t = useTranslations('responder.telemetry');
-  const tCommon = useTranslations('common');
 
   const currentTimeMs = useReplayStore((s) => s.currentTimeMs);
   const impactAtMs = useReplayStore((s) => s.impactAtMs);

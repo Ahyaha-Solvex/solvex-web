@@ -3,7 +3,6 @@
 import React, { useMemo, useRef } from 'react';
 import type { TelemetryWindow } from '@/lib/data/types';
 import { useReplayStore } from '@/lib/stores/replayStore';
-import { STAGE_COLORS } from '@/lib/three/materials';
 
 export interface TelemetryTraceProps {
   telemetry?: TelemetryWindow;

@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
 import { LandingNav } from '@/components/landing/LandingNav';
+import { BrandMorph } from '@/components/landing/BrandMorph';
 import { Hero } from '@/components/landing/Hero';
 import { BlackboxSection } from '@/components/landing/BlackboxSection';
 import { Chain } from '@/components/landing/Chain';
@@ -19,6 +20,7 @@ export default async function LandingPage({
   return (
     <div className="min-h-screen bg-bg text-ink flex flex-col selection:bg-brand selection:text-white">
       <LandingNav />
+      <BrandMorph />
       <main className="flex-1">
         <Hero />
         <BlackboxSection />

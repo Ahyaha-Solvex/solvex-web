@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
-import { Maximize2, Minimize2 } from 'lucide-react';
-import type { Incident, Ambulance, HospitalOption } from '@/lib/data/types';
+import { Maximize2 } from 'lucide-react';
+import type { Incident, Ambulance } from '@/lib/data/types';
 
 export interface MiniMapProps {
   incident?: Incident | null;
@@ -48,11 +48,8 @@ export function MiniMap({
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
 
-  // Default coordinate: Bouira / RN5 Algeria or incident pos
-  const defaultCenter: [number, number] = [
-    incident?.position.lng ?? 3.9056,
-    incident?.position.lat ?? 36.3749,
-  ];
+  const centerLng = incident?.position.lng ?? 3.9056;
+  const centerLat = incident?.position.lat ?? 36.3749;
 
   // Base map style (prefer light positron / demotiles or custom env)
   const mapStyle =
@@ -68,7 +65,7 @@ export function MiniMap({
       mapInstance = new maplibregl.Map({
         container: mapContainerRef.current,
         style: mapStyle,
-        center: defaultCenter,
+        center: [centerLng, centerLat],
         zoom: isPip ? 13 : 14.5,
         attributionControl: isPip ? false : undefined,
         interactive: !isPip, // Full map is interactive, PiP allows click to swap
@@ -96,7 +93,7 @@ export function MiniMap({
           },
           layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
         },
-        center: defaultCenter,
+        center: [centerLng, centerLat],
         zoom: isPip ? 13 : 14.5,
         interactive: !isPip,
       });
@@ -109,7 +106,7 @@ export function MiniMap({
       mapInstance.remove();
       mapRef.current = null;
     };
-  }, [mapStyle, isPip]);
+  }, [mapStyle, isPip, centerLng, centerLat]);
 
   // Update Markers and Layers on Incident change
   useEffect(() => {
