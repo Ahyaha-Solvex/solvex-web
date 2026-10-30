@@ -4,18 +4,26 @@
 
 ### Deliverables Completed
 
-#### 1. Enhanced Button Design System (from User Feedback)
-- [x] **Refined Ant Design Button Component Tokens**:
-  - Control height increased to 40px (SM: 32px, LG: 48px).
-  - Border radii: 10px (`--r-md`), 6px (`--r-sm`), 14px (`--r-lg`).
-  - Semibold typography (`fontWeight: 600`) with custom letter spacing.
-  - Tactile interactive feedback: `:active` scaling (`scale(0.985)`) with `--dur-fast` (150ms) easing.
-  - Tactile depth: primary soft shadow (`rgba(0, 98, 51, 0.18)`), default subtle elevation (`rgba(20, 32, 26, 0.06)`), and danger shadow (`rgba(210, 16, 52, 0.18)`).
-  - Hover background transitions to `--surface-2` (`#F3F0E8`), pressed to `--brand-subtle` (`#E6F1EA`).
-- [x] **Pill Language Switcher**:
-  - Upgraded to modern rounded pill design (`rounded-full`) with active brand fill and shadow.
-- [x] **Button Showcase**:
-  - Added full matrix in `/lab/tokens` covering Primary, Default, Danger, Dashed, Text, Link, Loading, Disabled, and Size variants (Small, Middle, Large).
+#### 1. Button & Switch Polish (Resolution of User Feedback)
+- [x] **Root Cause Diagnosis**:
+  - Tailwind CSS v3 `@tailwind base;` emits an unlayered preflight CSS rule (`button, [type='button'] { background-color: transparent; }`).
+  - Wrapping Ant Design with `<StyleProvider layer>` caused Ant Design CSS to reside in `@layer antd`, which CSS Cascade specification automatically deprioritizes below any unlayered rules.
+  - Furthermore, Ant Design's `:where()` selector has specificity `(0, 0, 0)`, allowing Tailwind's `button` selector `(0, 0, 1)` to override Ant Design's button and switch backgrounds to `transparent`.
+  - As a result:
+    - Primary and danger buttons lost their green/red fills and appeared bleached/white with faint borders.
+    - Switch tracks (rendered as `<button role="switch">`) lost their fill, rendering as invisible transparent ghosts on white card backgrounds.
+- [x] **Systemic Fix Applied**:
+  - Replaced `<StyleProvider layer>` with `<StyleProvider hashPriority="high">` in `src/components/app/AppProviders.tsx`.
+  - Defined explicit, high-contrast, tactile CSS rules in `src/styles/globals.css`:
+    - **Primary Button**: Solid Algerian flag green (`#006233`), crisp white (`#FFFFFF`) text, border, elevated shadow, `:hover` (`#007A41`), and `:active` scale (`0.985`, `#004D28`).
+    - **Primary Danger Button**: Solid Algerian flag red (`#D21034`), crisp white text, elevated shadow, `:hover` (`#B80E2D`), and `:active` scale (`0.985`, `#9E0C26`).
+    - **Default Danger Button**: Crisp red outline, `#D21034` text, white background, soft red tint on hover.
+    - **Default Action Button**: Crisp `--surface` (`#FFFFFF`) fill, `--border-strong` (`#D3CCBB`) border, `--ink` text, subtle elevation `--shadow-1`.
+    - **Switch (High Contrast)**:
+      - **Checked (ON)**: Solid flag green (`#006233`), white knob with depth shadow.
+      - **Unchecked (OFF)**: Solid taupe-gray (`#B5B0A4`) with dark border (`#9E988A`), guaranteeing immediate readability on white cards.
+      - **Switch Typography & Padding**: Added min-width (`76px`) and dedicated inner padding so labels like `"Online"`, `"Offline"`, and `"2G / SMS"` are completely visible without clipping.
+  - Added dedicated Buttons and Switches test matrix to `/lab/tokens`.
 
 #### 2. CP1 Data Layer
 - [x] **Data Contract Types (`src/lib/data/types.ts`)**:
@@ -68,21 +76,22 @@
 ---
 
 ### Verification Suite
-- **TypeScript**: `pnpm typecheck` (`tsc --noEmit`) → 0 errors.
-- **ESLint**: `pnpm lint` (`next lint`) → 0 warnings, 0 errors.
+- **TypeScript**: `pnpm typecheck` (`tsc --noEmit`) → **0 errors**.
+- **ESLint**: `pnpm lint` (`next lint`) → **0 warnings, 0 errors**.
 - **Vitest Unit & Integration Tests**: `pnpm test` (`vitest run`) → **25 / 25 passed**.
 - **i18n Key Parity**: `pnpm i18n:check` → **95 / 95 matching keys** across `fr`, `en`, and `ar`.
 - **Production Build**: `pnpm build` (`next build`) → Succeeded, 24 SSG static pages generated.
-- **Browser Runtime**: Verified via Playwright headless browser: 0 console errors, 0 console warnings across LTR (`/en/lab/data`) and RTL (`/ar/lab/data`).
+- **Visual & Browser Verification**: Verified via Playwright headless browser:
+  - Button states (Primary, Primary Danger, Default, Danger, Dashed, Link, Sizes).
+  - Switch states (Checked, Unchecked, Online, Offline, 2G/SMS, Small, Disabled).
 
 ---
 
-### Screenshots
-- Enhanced Buttons Showcase: [`docs/screenshots/cp0-tokens-en-buttons-enhanced.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp0-tokens-en-buttons-enhanced.png)
-- Data Stream (Online Mode - Blackbox Data): [`docs/screenshots/cp1-data-online-en.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-data-online-en.png)
-- Data Stream (Offline Mode - Degraded SMS): [`docs/screenshots/cp1-data-offline-en.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-data-offline-en.png)
-- Data Stream (Arabic RTL Layout): [`docs/screenshots/cp1-data-ar.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-data-ar.png)
-- Scenario Controller Drawer: [`docs/screenshots/cp1-scenario-drawer-open.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-scenario-drawer-open.png)
+### Verified Screenshots
+- Buttons & Switches Verification Matrix: [`docs/screenshots/cp1-buttons-and-switches.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-buttons-and-switches.png)
+- Network Switch (Online State - Flag Green `#006233`): [`docs/screenshots/cp1-data-online-switch.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-data-online-switch.png)
+- Network Switch (Offline State - High-contrast Taupe `#B5B0A4`): [`docs/screenshots/cp1-data-offline-switch.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-data-offline-switch.png)
+- Scenario Panel Drawer Controls & Switches: [`docs/screenshots/cp1-scenario-drawer-switches.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-scenario-drawer-switches.png)
 
 ---
 
@@ -96,5 +105,5 @@ None.
 
 ### Review Gate
 Per Hard Rule 3 in `GEMINI.md`:
-Work on **CP1** is complete. Execution is stopped at this gate awaiting explicit human approval:
+Work on **CP1** and the button/switch visual resolution is complete. Execution is stopped at this gate awaiting explicit human approval:
 `approved CP1`
