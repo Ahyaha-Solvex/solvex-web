@@ -27,3 +27,11 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# Blender working output
+blender/out/
+blender/*.blend1
+
+# External reference repositories
+external/
+

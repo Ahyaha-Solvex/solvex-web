@@ -63,6 +63,7 @@ const config: Config = {
       fontFamily: {
         sans: 'var(--font-sans)',
         mono: 'var(--font-mono)',
+        arabic: 'var(--font-plex-arabic), var(--font-sans)',
       },
       transitionDuration: {
         fast: 'var(--dur-fast)',

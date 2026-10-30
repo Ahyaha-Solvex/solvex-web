@@ -4,7 +4,7 @@ import { antdTheme } from '@/lib/antdTheme';
 
 describe('Brand & Theme Configuration', () => {
   it('exports correct product name', () => {
-    expect(PRODUCT_NAME).toBe('SolveX Response');
+    expect(PRODUCT_NAME).toBe('أَحْيَاهَا');
   });
 
   it('matches brand primary color from DESIGN.md', () => {

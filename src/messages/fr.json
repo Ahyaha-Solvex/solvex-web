@@ -1,7 +1,7 @@
 {
   "common": {
-    "appName": "SolveX Response",
-    "brand": "SolveX",
+    "appName": "أَحْيَاهَا",
+    "brand": "أَحْيَاهَا",
     "simBadge": "Flux boîte noire simulé",
     "medicalDisclaimer": "Estimation de priorité, non un diagnostic clinique.",
     "direction": "LTR",
@@ -98,7 +98,8 @@
     },
     "hero": {
       "eyebrow": "SolveX 3.0 · Intervention d'urgence",
-      "title": "Chaque minute compte.",
+      "title": "وَمَنْ أَحْيَاهَا فَكَأَنَّمَا أَحْيَا النَّاسَ جَمِيعًا",
+      "ayahTranslation": "« Et quiconque lui fait don de la vie, c'est comme s'il faisait don de la vie à tous les hommes. » — Sourate Al-Ma'ida (5:32)",
       "lead": "Un boîtier dans la voiture détecte l'accident, estime les blessures et alerte les bons services, même sans internet.",
       "seeHow": "Voir comment ça marche",
       "openDemo": "Ouvrir la démo"

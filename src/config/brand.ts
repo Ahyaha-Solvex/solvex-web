@@ -1,1 +1,1 @@
-export const PRODUCT_NAME = 'SolveX Response';
+export const PRODUCT_NAME = 'أَحْيَاهَا';

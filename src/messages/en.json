@@ -1,7 +1,7 @@
 {
   "common": {
-    "appName": "SolveX Response",
-    "brand": "SolveX",
+    "appName": "أَحْيَاهَا",
+    "brand": "أَحْيَاهَا",
     "simBadge": "Simulated blackbox stream",
     "medicalDisclaimer": "Estimate to prioritise, not a diagnosis.",
     "direction": "LTR",
@@ -98,7 +98,8 @@
     },
     "hero": {
       "eyebrow": "SolveX 3.0 · Crash response",
-      "title": "Every minute counts.",
+      "title": "وَمَنْ أَحْيَاهَا فَكَأَنَّمَا أَحْيَا النَّاسَ جَمِيعًا",
+      "ayahTranslation": "“And whoever saves a life, it is as though he had saved the lives of all mankind.” — Surah Al-Ma'idah (5:32)",
       "lead": "A blackbox in the car detects the crash, estimates the injuries and alerts the right services — even without internet.",
       "seeHow": "See how it works",
       "openDemo": "Open the demo"
