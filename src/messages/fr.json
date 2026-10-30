@@ -1,0 +1,114 @@
+{
+  "common": {
+    "appName": "SolveX Response",
+    "brand": "SolveX",
+    "simBadge": "Flux boîte noire simulé",
+    "direction": "LTR",
+    "loading": "Chargement...",
+    "error": "Une erreur est survenue",
+    "retry": "Réessayer",
+    "locales": {
+      "fr": "Français",
+      "en": "English",
+      "ar": "العربية"
+    }
+  },
+  "lab": {
+    "title": "Laboratoire de composants",
+    "subtitle": "Catalogue interactif des composants et guide de styles",
+    "directionIndicator": "LTR",
+    "categories": {
+      "foundations": "Fondations",
+      "primitives": "Primitives",
+      "dataDisplay": "Affichage de données",
+      "stage": "Scène 3D",
+      "map": "Cartographie",
+      "landing": "Page vitrine"
+    },
+    "links": {
+      "tokens": "Tokens de design",
+      "data": "Flux de données",
+      "body": "Calibration corps 3D",
+      "hospital": "Vue Hôpital",
+      "responder": "Vue Secours",
+      "landing": "Page Vitrine"
+    },
+    "tokens": {
+      "title": "Tokens de Design",
+      "subtitle": "Palette Saharan Paper, typographie, rayons, ombres et dynamique de mouvement",
+      "colors": "Couleurs & Palette",
+      "surfaces": "Surfaces & Bordures",
+      "brand": "Marque & Accents",
+      "severity": "Niveaux de Gravité (M3)",
+      "regions": "Niveaux de Régions Corporelles (M4)",
+      "confidence": "Échelle de Confiance",
+      "stage": "Palette Scène Sombre",
+      "typography": "Échelle Typographique",
+      "spacing": "Échelle d'Espacement (base 4px)",
+      "radii": "Rayons de Courbure",
+      "shadows": "Ombres Portées",
+      "motion": "Dynamique & Mouvement",
+      "fast": "Rapide (150ms)",
+      "base": "Base (240ms)",
+      "slow": "Lent (420ms)",
+      "hero": "Héroïque (900ms)",
+      "easeOut": "Ease Out",
+      "easeInOut": "Ease In-Out",
+      "triggerMotion": "Déclencher l'animation",
+      "antVerification": "Vérification des composants Ant Design",
+      "antButtonPrimary": "Bouton Principal",
+      "antButtonDefault": "Bouton Standard",
+      "antButtonDanger": "Bouton Alerte",
+      "antTagText": "Badge Antd",
+      "antTableColName": "Propriété",
+      "antTableColVal": "Valeur",
+      "antTableColDesc": "Usage prévu"
+    }
+  },
+  "landing": {
+    "title": "Page Vitrine",
+    "placeholder": "Présentation produit en cours de préparation (CP5)",
+    "hero": {
+      "title": "Chaque minute compte.",
+      "lead": "Un boîtier dans la voiture détecte l'accident, estime les blessures et alerte les bons services, même sans internet."
+    }
+  },
+  "hospital": {
+    "title": "Vue Hôpital",
+    "placeholder": "Tableau de bord de préparation aux urgences (CP3)"
+  },
+  "responder": {
+    "title": "Vue Secours",
+    "placeholder": "Poste de commandement Protection Civile (CP4)"
+  },
+  "severity": {
+    "low": "Faible",
+    "medium": "Modéré",
+    "high": "Élevé",
+    "extreme": "Extrême"
+  },
+  "regions": {
+    "unlikely": "Improbable",
+    "check": "À vérifier",
+    "likely": "Probable",
+    "head": "Tête",
+    "face": "Visage",
+    "spine_neck": "Rachis & Cou",
+    "thorax": "Thorax",
+    "abdomen": "Abdomen",
+    "arms": "Membres supérieurs",
+    "legs": "Membres inférieurs"
+  },
+  "status": {
+    "suspected": "Suspecté",
+    "likely": "Probable",
+    "witness_confirmed": "Confirmé témoin",
+    "confirmed": "Confirmé",
+    "detected": "Détecté",
+    "dispatched": "Dépêché",
+    "on_scene": "Sur les lieux",
+    "transporting": "En transport",
+    "at_hospital": "À l'hôpital",
+    "closed": "Clôturé"
+  }
+}

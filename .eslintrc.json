@@ -1,0 +1,36 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "overrides": [
+    {
+      "files": [
+        "**/*marketing*/**/*",
+        "**/*marketing*/*",
+        "**/landing/**/*",
+        "**/landing/*"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "antd",
+                "message": "Ant Design is forbidden in marketing / landing per GEMINI rule 5 and ARCHITECTURE.md."
+              },
+              {
+                "name": "@ant-design/icons",
+                "message": "Ant Design icons are forbidden in marketing / landing per GEMINI rule 5 and ARCHITECTURE.md. Use lucide-react instead."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["antd", "antd/*", "@ant-design/*"],
+                "message": "Ant Design packages are forbidden in marketing / landing per GEMINI rule 5 and ARCHITECTURE.md."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

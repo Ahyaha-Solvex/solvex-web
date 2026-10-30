@@ -1,0 +1,114 @@
+{
+  "common": {
+    "appName": "SolveX Response",
+    "brand": "SolveX",
+    "simBadge": "بث الصندوق الأسود المحاكى",
+    "direction": "RTL",
+    "loading": "جارٍ التحميل...",
+    "error": "حدث خطأ غير متوقع",
+    "retry": "إعادة المحاولة",
+    "locales": {
+      "fr": "Français",
+      "en": "English",
+      "ar": "العربية"
+    }
+  },
+  "lab": {
+    "title": "مختبر المكونات",
+    "subtitle": "دليل المكونات التفاعلي ونظام التصميم",
+    "directionIndicator": "RTL",
+    "categories": {
+      "foundations": "الأساسيات",
+      "primitives": "العناصر الأولية",
+      "dataDisplay": "عرض البيانات",
+      "stage": "المشهد ثلاثي الأبعاد",
+      "map": "الخرائط",
+      "landing": "صفحة العرض"
+    },
+    "links": {
+      "tokens": "رموز التصميم",
+      "data": "تدفق البيانات",
+      "body": "معايرة المجسم ثلاثي الأبعاد",
+      "hospital": "واجهة المستشفى",
+      "responder": "واجهة الحماية المدنية",
+      "landing": "الصفحة التعريفية"
+    },
+    "tokens": {
+      "title": "رموز التصميم (Design Tokens)",
+      "subtitle": "لوحة Saharan Paper الفاتحة، قياسات الخطوط، الحواف، الظلال وديناميكية الحركة",
+      "colors": "الألوان ولوحة التدرجات",
+      "surfaces": "الأسطح والحدود",
+      "brand": "الهوية والألوان المميزة",
+      "severity": "مستويات الخطورة (M3)",
+      "regions": "مستويات مناطق الجسم (M4)",
+      "confidence": "مقياس الثقة",
+      "stage": "لوحة ألوان المشهد المظلم",
+      "typography": "مقياس الخطوط",
+      "spacing": "مقياس المسافات (قاعدة 4px)",
+      "radii": "نصف قطر الانحناء",
+      "shadows": "الظلال",
+      "motion": "الحركة والانتقالات",
+      "fast": "سريع (150ms)",
+      "base": "أساسي (240ms)",
+      "slow": "بطيء (420ms)",
+      "hero": "بطيء رئيسي (900ms)",
+      "easeOut": "تلاشي سريع",
+      "easeInOut": "انتقال سلس",
+      "triggerMotion": "تشغيل الحركة التجريبية",
+      "antVerification": "التحقق من سمة مكونات Ant Design",
+      "antButtonPrimary": "زر رئيسي",
+      "antButtonDefault": "زر افتراضي",
+      "antButtonDanger": "زر تحذير",
+      "antTagText": "وسم Antd",
+      "antTableColName": "الخاصية",
+      "antTableColVal": "القيمة",
+      "antTableColDesc": "الاستخدام المقترح"
+    }
+  },
+  "landing": {
+    "title": "الصفحة التعريفية",
+    "placeholder": "عرض المنتج قيد التطوير (CP5)",
+    "hero": {
+      "title": "كل دقيقة مهمة.",
+      "lead": "جهاز في السيارة يكتشف الحادث، ويقدّر الإصابات، وينبّه الجهات المناسبة، حتى من دون إنترنت."
+    }
+  },
+  "hospital": {
+    "title": "واجهة المستشفى",
+    "placeholder": "لوحة تحضير طوارئ المستشفى (CP3)"
+  },
+  "responder": {
+    "title": "واجهة الحماية المدنية",
+    "placeholder": "منصة التوجيه والإسعاف للحماية المدنية (CP4)"
+  },
+  "severity": {
+    "low": "منخفض",
+    "medium": "متوسط",
+    "high": "مرتفع",
+    "extreme": "حرج جداً"
+  },
+  "regions": {
+    "unlikely": "مستبعد",
+    "check": "يتطلب الفحص",
+    "likely": "محتمل",
+    "head": "الرأس",
+    "face": "الوجه",
+    "spine_neck": "العنق والعمود الفقري",
+    "thorax": "الصدر",
+    "abdomen": "البطن",
+    "arms": "الأطراف العلوية",
+    "legs": "الأطراف السفلية"
+  },
+  "status": {
+    "suspected": "مشتبه به",
+    "likely": "مرجح",
+    "witness_confirmed": "مؤكد بواسطة شاهد",
+    "confirmed": "مؤكد",
+    "detected": "تم الاكتشاف",
+    "dispatched": "تم الإرسال",
+    "on_scene": "في الموقع",
+    "transporting": "جاري النقل",
+    "at_hospital": "وصل المستشفى",
+    "closed": "مغلق"
+  }
+}

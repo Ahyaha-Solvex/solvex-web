@@ -1,0 +1,114 @@
+{
+  "common": {
+    "appName": "SolveX Response",
+    "brand": "SolveX",
+    "simBadge": "Simulated blackbox stream",
+    "direction": "LTR",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "locales": {
+      "fr": "Français",
+      "en": "English",
+      "ar": "العربية"
+    }
+  },
+  "lab": {
+    "title": "Component Lab",
+    "subtitle": "Interactive component sandbox and design system reference",
+    "directionIndicator": "LTR",
+    "categories": {
+      "foundations": "Foundations",
+      "primitives": "Primitives",
+      "dataDisplay": "Data display",
+      "stage": "3D Stage",
+      "map": "Map",
+      "landing": "Landing showcase"
+    },
+    "links": {
+      "tokens": "Design Tokens",
+      "data": "Data Stream",
+      "body": "3D Body Calibration",
+      "hospital": "Hospital View",
+      "responder": "Responder View",
+      "landing": "Landing Showcase"
+    },
+    "tokens": {
+      "title": "Design Tokens",
+      "subtitle": "Saharan Paper light palette, typography, radii, shadows, and motion dynamics",
+      "colors": "Colors & Palette",
+      "surfaces": "Surfaces & Borders",
+      "brand": "Brand & Accents",
+      "severity": "Severity Levels (M3)",
+      "regions": "Body Region Levels (M4)",
+      "confidence": "Confidence Ladder",
+      "stage": "Dark Stage Palette",
+      "typography": "Typography Scale",
+      "spacing": "Spacing Scale (4px base)",
+      "radii": "Border Radii",
+      "shadows": "Box Shadows",
+      "motion": "Motion & Transitions",
+      "fast": "Fast (150ms)",
+      "base": "Base (240ms)",
+      "slow": "Slow (420ms)",
+      "hero": "Hero (900ms)",
+      "easeOut": "Ease Out",
+      "easeInOut": "Ease In-Out",
+      "triggerMotion": "Trigger Transition",
+      "antVerification": "Ant Design Component Verification",
+      "antButtonPrimary": "Primary Action",
+      "antButtonDefault": "Default Action",
+      "antButtonDanger": "Danger Action",
+      "antTagText": "Antd Tag",
+      "antTableColName": "Property",
+      "antTableColVal": "Token Value",
+      "antTableColDesc": "Usage"
+    }
+  },
+  "landing": {
+    "title": "Landing Page",
+    "placeholder": "Product showcase under active development (CP5)",
+    "hero": {
+      "title": "Every minute counts.",
+      "lead": "A blackbox in the car detects the crash, estimates injuries and alerts the right services — even without internet."
+    }
+  },
+  "hospital": {
+    "title": "Hospital View",
+    "placeholder": "Emergency room preparation dashboard (CP3)"
+  },
+  "responder": {
+    "title": "Responder View",
+    "placeholder": "Protection Civile dispatcher console (CP4)"
+  },
+  "severity": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "extreme": "Extreme"
+  },
+  "regions": {
+    "unlikely": "Unlikely",
+    "check": "Check",
+    "likely": "Likely",
+    "head": "Head",
+    "face": "Face",
+    "spine_neck": "Spine & Neck",
+    "thorax": "Thorax",
+    "abdomen": "Abdomen",
+    "arms": "Upper Limbs",
+    "legs": "Lower Limbs"
+  },
+  "status": {
+    "suspected": "Suspected",
+    "likely": "Likely",
+    "witness_confirmed": "Witness Confirmed",
+    "confirmed": "Confirmed",
+    "detected": "Detected",
+    "dispatched": "Dispatched",
+    "on_scene": "On Scene",
+    "transporting": "Transporting",
+    "at_hospital": "At Hospital",
+    "closed": "Closed"
+  }
+}

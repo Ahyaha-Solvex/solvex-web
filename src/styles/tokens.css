@@ -1,0 +1,75 @@
+:root {
+  /* surfaces */
+  --bg: #FAF8F3;
+  --surface: #FFFFFF;
+  --surface-2: #F3F0E8;
+  --border: #E6E1D5;
+  --border-strong: #D3CCBB;
+  /* ink */
+  --ink: #14201A;
+  --ink-2: #3B4740;
+  --muted: #5C675F;
+  /* brand (flag green) */
+  --brand: #006233;
+  --brand-hover: #007A41;
+  --brand-press: #004D28;
+  --brand-subtle: #E6F1EA;
+  /* severity (M3) */
+  --sev-low: #2A7F6F;
+  --sev-medium: #D9A400;     /* text on it: --ink */
+  --sev-high: #C9560F;
+  --sev-extreme: #D21034;    /* flag red */
+  --sev-extreme-subtle: #FBE5E9;
+  /* body regions (M4) */
+  --reg-unlikely: #C9C4B6;
+  --reg-check: #E0A100;
+  --reg-likely: #D21034;
+  /* confidence ladder / pins */
+  --conf-suspected: #8A9189;
+  --conf-likely: #D9A400;
+  --conf-witness: #C9560F;
+  --conf-confirmed: #D21034;
+  /* dark stage */
+  --stage-bg: #0B1310;
+  --stage-grid: rgba(255,255,255,0.06);
+  --stage-ink: #E8EEEA;
+  --stage-muted: #8FA097;
+  --stage-route: #F2B705;    /* response route only */
+  --stage-impact: #FF4D5E;
+  /* radii (px) */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 14px; --r-xl: 20px;
+  /* shadows */
+  --shadow-1: 0 1px 2px rgba(20,32,26,.06);
+  --shadow-2: 0 4px 16px rgba(20,32,26,.08);
+  /* motion */
+  --dur-fast: 150ms; --dur-base: 240ms; --dur-slow: 420ms; --dur-hero: 900ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* fonts */
+  --font-sans: var(--font-geist-sans), var(--font-plex-arabic), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+:lang(ar) {
+  --font-sans: var(--font-plex-arabic), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.stage {
+  position: relative;
+  background: var(--stage-bg);
+  --fade: 96px;
+  -webkit-mask-image:
+    linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 var(--fade), #000 calc(100% - var(--fade)), transparent 100%);
+  mask-composite: intersect;
+}
+
+@media (max-width: 768px) {
+  .stage {
+    --fade: 48px;
+  }
+}
