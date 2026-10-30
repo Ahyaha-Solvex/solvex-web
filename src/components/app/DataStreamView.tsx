@@ -76,12 +76,11 @@ export function DataStreamView() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 bg-surface border border-border px-3 py-1.5 rounded-lg text-xs">
+          <div className="flex items-center gap-2 bg-surface border border-border px-3 py-1.5 rounded-lg text-xs shadow-1">
             <span className="font-semibold text-ink">Network:</span>
             <Switch
               checked={online}
               onChange={(checked) => source.toggleNetwork(checked)}
-              size="small"
               checkedChildren="Online"
               unCheckedChildren="Offline"
             />

@@ -33,7 +33,7 @@ export function AppProviders({
 
   return (
     <AntdRegistry>
-      <StyleProvider layer>
+      <StyleProvider hashPriority="high">
         <ConfigProvider
           theme={antdTheme}
           locale={antdLocales[locale] || frFR}

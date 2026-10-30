@@ -1,5 +1,3 @@
-@layer theme, base, antd, components, utilities;
-
 @import './tokens.css';
 
 @tailwind base;
@@ -20,11 +18,190 @@ body {
   outline-offset: 2px;
 }
 
-/* Button tactile feel per DESIGN.md */
+/* =============================================================
+   ANT DESIGN OVERRIDES & POLISH
+   Guarantees crisp contrast against Tailwind CSS base resets
+   ============================================================= */
+
+/* --- Primary Button --- */
+.ant-btn-primary {
+  background-color: var(--brand) !important;
+  color: #ffffff !important;
+  border-color: var(--brand) !important;
+  box-shadow: 0 2px 4px rgba(0, 98, 51, 0.18) !important;
+  font-weight: 600 !important;
+}
+.ant-btn-primary:hover:not(:disabled) {
+  background-color: var(--brand-hover) !important;
+  border-color: var(--brand-hover) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(0, 98, 51, 0.28) !important;
+}
+.ant-btn-primary:active:not(:disabled) {
+  background-color: var(--brand-press) !important;
+  border-color: var(--brand-press) !important;
+  color: #ffffff !important;
+  transform: scale(0.985);
+}
+
+/* --- Primary Danger Button --- */
+.ant-btn-dangerous.ant-btn-primary {
+  background-color: var(--sev-extreme) !important;
+  border-color: var(--sev-extreme) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(210, 16, 52, 0.2) !important;
+  font-weight: 600 !important;
+}
+.ant-btn-dangerous.ant-btn-primary:hover:not(:disabled) {
+  background-color: #b80e2d !important;
+  border-color: #b80e2d !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(210, 16, 52, 0.3) !important;
+}
+.ant-btn-dangerous.ant-btn-primary:active:not(:disabled) {
+  background-color: #9e0c26 !important;
+  border-color: #9e0c26 !important;
+  color: #ffffff !important;
+  transform: scale(0.985);
+}
+
+/* --- Default Danger Button --- */
+.ant-btn-dangerous:not(.ant-btn-primary) {
+  background-color: var(--surface) !important;
+  color: var(--sev-extreme) !important;
+  border: 1.5px solid var(--sev-extreme) !important;
+  font-weight: 600 !important;
+}
+.ant-btn-dangerous:not(.ant-btn-primary):hover:not(:disabled) {
+  background-color: var(--sev-extreme-subtle) !important;
+  border-color: var(--sev-extreme) !important;
+  color: var(--sev-extreme) !important;
+}
+.ant-btn-dangerous:not(.ant-btn-primary):active:not(:disabled) {
+  background-color: #f7ced5 !important;
+  transform: scale(0.985);
+}
+
+/* --- Default Action Button --- */
+.ant-btn-default {
+  background-color: var(--surface) !important;
+  color: var(--ink) !important;
+  border: 1px solid var(--border-strong) !important;
+  box-shadow: var(--shadow-1) !important;
+  font-weight: 500 !important;
+}
+.ant-btn-default:hover:not(:disabled) {
+  background-color: var(--surface-2) !important;
+  border-color: var(--ink-2) !important;
+  color: var(--ink) !important;
+}
+.ant-btn-default:active:not(:disabled) {
+  background-color: var(--brand-subtle) !important;
+  border-color: var(--brand) !important;
+  color: var(--brand-press) !important;
+  transform: scale(0.985);
+}
+
+/* --- Dashed Button --- */
+.ant-btn-dashed {
+  background-color: var(--surface) !important;
+  color: var(--ink) !important;
+  border: 1.5px dashed var(--border-strong) !important;
+}
+.ant-btn-dashed:hover:not(:disabled) {
+  background-color: var(--surface-2) !important;
+  border-color: var(--brand) !important;
+  color: var(--brand) !important;
+}
+
+/* --- Text & Link Buttons --- */
+.ant-btn-text {
+  color: var(--ink) !important;
+  background-color: transparent !important;
+}
+.ant-btn-text:hover:not(:disabled) {
+  background-color: var(--surface-2) !important;
+  color: var(--brand) !important;
+}
+.ant-btn-link {
+  color: var(--brand) !important;
+  background-color: transparent !important;
+}
+.ant-btn-link:hover:not(:disabled) {
+  color: var(--brand-hover) !important;
+}
+
+/* --- Disabled Button --- */
+.ant-btn:disabled,
+.ant-btn.ant-btn-disabled {
+  background-color: var(--surface-2) !important;
+  color: var(--muted) !important;
+  border-color: var(--border) !important;
+  opacity: 0.65 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* --- Button Tactile Transitions --- */
 .ant-btn {
   transition: all var(--dur-fast) var(--ease-out) !important;
 }
 
-.ant-btn:active:not(:disabled) {
-  transform: scale(0.985);
+/* =============================================================
+   ANT DESIGN SWITCH (High Contrast & Clear Readability)
+   ============================================================= */
+.ant-switch {
+  background-color: #B5B0A4 !important; /* solid, visible contrasted track when OFF */
+  border: 1px solid #9E988A !important;
+  transition: all var(--dur-fast) var(--ease-out) !important;
+  min-width: 44px;
+}
+.ant-switch:hover:not(.ant-switch-disabled) {
+  background-color: #9E988A !important;
+}
+.ant-switch.ant-switch-checked {
+  background-color: var(--brand) !important; /* Algerian flag green when ON */
+  border-color: var(--brand-press) !important;
+}
+.ant-switch.ant-switch-checked:hover:not(.ant-switch-disabled) {
+  background-color: var(--brand-hover) !important;
+  border-color: var(--brand-press) !important;
+}
+.ant-switch .ant-switch-handle::before {
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 4px rgba(20, 32, 26, 0.25) !important;
+}
+
+/* Switches with text labels (Online/Offline/SMS) */
+.ant-switch:has(.ant-switch-inner-checked),
+.ant-switch:has(.ant-switch-inner-unchecked) {
+  min-width: 76px !important;
+}
+
+.ant-switch .ant-switch-inner {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em;
+}
+
+.ant-switch.ant-switch-checked .ant-switch-inner {
+  color: #ffffff !important;
+  padding-inline-start: 6px !important;
+  padding-inline-end: 22px !important;
+}
+
+.ant-switch:not(.ant-switch-checked) .ant-switch-inner {
+  color: #14201A !important; /* crisp dark text for readability when OFF */
+  padding-inline-start: 22px !important;
+  padding-inline-end: 6px !important;
+}
+
+/* Small switch variant adjustments */
+.ant-switch-small {
+  min-width: 36px;
+}
+.ant-switch-small:has(.ant-switch-inner-checked),
+.ant-switch-small:has(.ant-switch-inner-unchecked) {
+  min-width: 60px !important;
 }

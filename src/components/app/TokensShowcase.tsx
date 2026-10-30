@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Button, Tag, Table, Card, Space, Divider } from 'antd';
+import { Button, Tag, Table, Card, Space, Divider, Switch } from 'antd';
 import {
   CheckCircleFilled,
   InfoCircleFilled,
@@ -159,6 +159,9 @@ export function TokensShowcase() {
                   <Button type="primary" icon={<ArrowRightOutlined />}>
                     {t('antButtonPrimary')}
                   </Button>
+                  <Button type="primary" danger>
+                    Primary Danger
+                  </Button>
                   <Button>{t('antButtonDefault')}</Button>
                   <Button danger>{t('antButtonDanger')}</Button>
                   <Button type="dashed">Dashed Action</Button>
@@ -173,6 +176,42 @@ export function TokensShowcase() {
                   <Button size="small" type="primary" icon={<CheckOutlined />}>Small (32px)</Button>
                   <Button size="middle" type="primary" icon={<CheckOutlined />}>Middle (40px)</Button>
                   <Button size="large" type="primary" icon={<CheckOutlined />}>Large (48px)</Button>
+                </div>
+              </div>
+            </div>
+
+            <Divider className="my-4 border-border" />
+
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">
+                Switches &amp; Toggles (High-Contrast States)
+              </h3>
+              <div className="flex items-center gap-6 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted font-medium">Checked (ON):</span>
+                  <Switch defaultChecked />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted font-medium">Unchecked (OFF):</span>
+                  <Switch defaultChecked={false} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted font-medium">Labeled:</span>
+                  <Switch
+                    defaultChecked
+                    checkedChildren="Online"
+                    unCheckedChildren="Offline"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted font-medium">Small:</span>
+                  <Switch size="small" defaultChecked />
+                  <Switch size="small" defaultChecked={false} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted font-medium">Disabled:</span>
+                  <Switch disabled defaultChecked />
+                  <Switch disabled defaultChecked={false} />
                 </div>
               </div>
             </div>
