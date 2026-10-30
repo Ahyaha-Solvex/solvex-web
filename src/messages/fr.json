@@ -88,11 +88,110 @@
     }
   },
   "landing": {
-    "title": "Page Vitrine",
-    "placeholder": "Présentation produit en cours de préparation (CP5)",
+    "title": "Démonstration d'accueil",
+    "placeholder": "Présentation du produit avec simulation de boîte noire",
+    "nav": {
+      "howItWorks": "Comment ça marche",
+      "platform": "Plateforme",
+      "demo": "Ouvrir la démo",
+      "demoLink": "Démo"
+    },
     "hero": {
+      "eyebrow": "SolveX 3.0 · Intervention d'urgence",
       "title": "Chaque minute compte.",
-      "lead": "Un boîtier dans la voiture détecte l'accident, estime les blessures et alerte les bons services, même sans internet."
+      "lead": "Un boîtier dans la voiture détecte l'accident, estime les blessures et alerte les bons services, même sans internet.",
+      "seeHow": "Voir comment ça marche",
+      "openDemo": "Ouvrir la démo"
+    },
+    "sequence": {
+      "title": "Intégré dans le véhicule.",
+      "lead": "Sept modules. Une seule décision.",
+      "scrollHint": "Faites défiler pour explorer",
+      "simulatorTitle": "Simulateur de séquence boîte noire",
+      "frame": "Image",
+      "clip": "Séquence",
+      "play": "Lire",
+      "pause": "Pause",
+      "speed": "Vitesse",
+      "jumpTo": "Aller à l'étape"
+    },
+    "carousel": {
+      "accelerometer": {
+        "title": "Accéléromètre",
+        "desc": "Mesure la force de l'impact et la direction du choc."
+      },
+      "gyroscope": {
+        "title": "Gyroscope",
+        "desc": "Détecte les tonneaux et les rotations du véhicule."
+      },
+      "gps": {
+        "title": "GPS",
+        "desc": "Position exacte et vitesse du véhicule avant l'impact."
+      },
+      "esp32": {
+        "title": "ESP32",
+        "desc": "Le cerveau : lit les capteurs, détecte le crash et communique en Bluetooth."
+      },
+      "gsm": {
+        "title": "GSM + SIM",
+        "desc": "Transmet l'alerte par data ou SMS, même avec un téléphone détruit."
+      },
+      "lora": {
+        "title": "LoRaWAN",
+        "desc": "Radio longue portée pour les zones sans aucune couverture cellulaire."
+      },
+      "antenna": {
+        "title": "Antenne",
+        "desc": "Diffuse les signaux radio hors du boîtier blindé."
+      }
+    },
+    "chain": {
+      "title": "Quatre étapes. Une seule chaîne.",
+      "step1Title": "Accident",
+      "step1Desc": "La boîte noire détecte le crash et géolocalise le véhicule.",
+      "step2Title": "Alerte",
+      "step2Desc": "Secours, témoins proches et contacts sont alertés par data ou SMS.",
+      "step3Title": "Évaluation",
+      "step3Desc": "L'IA estime la gravité et localise les blessures corporelles.",
+      "step4Title": "Orientation",
+      "step4Desc": "Le blessé est orienté vers l'hôpital adapté, préparé à son arrivée."
+    },
+    "numbers": {
+      "title": "Entraîné sur des données réelles d'accidents.",
+      "detectionScore": "0.990",
+      "detectionDesc": "Détection d'accident · précision moyenne sur 24 174 enregistrements de véhicules inconnus.",
+      "severityScore": "0.889",
+      "severityDesc": "Classement de gravité · AUC sur accidents de validation.",
+      "regionScore": "0.827",
+      "regionDesc": "Régions lésées · AUC moyenne sur les 7 régions corporelles.",
+      "footnote": "Scores sur jeu de test. Les données proviennent de flottes commerciales ; nous prévoyons un réétalonnage sur notre propre boîte noire. Estimations d'aide à la décision, pas un diagnostic."
+    },
+    "resilience": {
+      "title": "Quand le réseau tombe, la chaîne reste intacte.",
+      "dataTitle": "Données mobiles",
+      "dataDesc": "Télémétrie complète et flux capteurs haute fréquence.",
+      "smsTitle": "Secours par SMS",
+      "smsDesc": "Données compressées en 160 caractères sur réseau 2G faible.",
+      "relayTitle": "Relais de proximité",
+      "relayDesc": "Transmission maillée entre véhicules environnants.",
+      "satTitle": "SOS Satellite",
+      "satDesc": "Liaison d'urgence directe pour routes sahariennes isolées.",
+      "active": "Actif",
+      "roadmap": "Feuille de route"
+    },
+    "platform": {
+      "title": "Une plateforme, trois vues dédiées.",
+      "citizenTitle": "Application citoyenne",
+      "citizenDesc": "Mode conduite, compte à rebours, alerte des secouristes.",
+      "citizenTag": "Mobile",
+      "responderTitle": "Console de régulation",
+      "responderDesc": "Carte temps réel, reconstruction 3D, file de tri.",
+      "hospitalTitle": "Tableau de bord hospitalier",
+      "hospitalDesc": "Carte corporelle 3D des lésions, profil, constantes, ETA."
+    },
+    "footer": {
+      "byline": "Conçu pour SolveX 3.0 · Université HIS",
+      "disclaimer": "Flux de boîte noire simulé."
     }
   },
   "hospital": {

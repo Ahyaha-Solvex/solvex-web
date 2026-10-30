@@ -88,11 +88,110 @@
     }
   },
   "landing": {
-    "title": "Landing Page",
-    "placeholder": "Product showcase under active development (CP5)",
+    "title": "Landing Showcase",
+    "placeholder": "Product showcase with scroll-driven blackbox simulation",
+    "nav": {
+      "howItWorks": "How it works",
+      "platform": "Platform",
+      "demo": "Open demo",
+      "demoLink": "Demo"
+    },
     "hero": {
+      "eyebrow": "SolveX 3.0 · Crash response",
       "title": "Every minute counts.",
-      "lead": "A blackbox in the car detects the crash, estimates injuries and alerts the right services — even without internet."
+      "lead": "A blackbox in the car detects the crash, estimates the injuries and alerts the right services — even without internet.",
+      "seeHow": "See how it works",
+      "openDemo": "Open the demo"
+    },
+    "sequence": {
+      "title": "Built into the car.",
+      "lead": "Seven modules. One decision.",
+      "scrollHint": "Scroll to explore",
+      "simulatorTitle": "Blackbox Sequence Simulator",
+      "frame": "Frame",
+      "clip": "Clip",
+      "play": "Play",
+      "pause": "Pause",
+      "speed": "Speed",
+      "jumpTo": "Jump to stage"
+    },
+    "carousel": {
+      "accelerometer": {
+        "title": "Accelerometer",
+        "desc": "Measures the force of the impact and the direction it came from."
+      },
+      "gyroscope": {
+        "title": "Gyroscope",
+        "desc": "Detects spin and rollover."
+      },
+      "gps": {
+        "title": "GPS",
+        "desc": "Exact position and the speed just before impact."
+      },
+      "esp32": {
+        "title": "ESP32",
+        "desc": "The brain: reads the sensors, detects the crash, pairs with phones over Bluetooth."
+      },
+      "gsm": {
+        "title": "GSM + SIM",
+        "desc": "Sends the alert by data or SMS, even when the phone is broken."
+      },
+      "lora": {
+        "title": "LoRaWAN",
+        "desc": "Long-range radio for places with no cellular signal."
+      },
+      "antenna": {
+        "title": "Antenna",
+        "desc": "Carries the radio signals out of the box."
+      }
+    },
+    "chain": {
+      "title": "Four steps. One chain.",
+      "step1Title": "Accident",
+      "step1Desc": "The blackbox detects the impact and locates the car.",
+      "step2Title": "Alert",
+      "step2Desc": "Services, people nearby and contacts are alerted, by data or by SMS.",
+      "step3Title": "Evaluation",
+      "step3Desc": "AI estimates how badly people are hurt, and where.",
+      "step4Title": "Orientation",
+      "step4Desc": "The patient goes to the hospital that can treat them, already prepared."
+    },
+    "numbers": {
+      "title": "Trained on real crash data.",
+      "detectionScore": "0.990",
+      "detectionDesc": "Crash detection · average precision on 24,174 recordings from vehicles the model never saw.",
+      "severityScore": "0.889",
+      "severityDesc": "Severity ranking · AUC on held-out crashes.",
+      "regionScore": "0.827",
+      "regionDesc": "Injury regions · mean AUC across 7 body regions.",
+      "footnote": "Test-set scores. Detection data comes from commercial vehicles; we plan to recalibrate on our own blackbox. These are decision-support estimates, not diagnoses."
+    },
+    "resilience": {
+      "title": "When the network fails, the chain doesn't.",
+      "dataTitle": "Mobile data",
+      "dataDesc": "Full blackbox telemetry and high-rate sensor streams.",
+      "smsTitle": "SMS Fallback",
+      "smsDesc": "Compressed 160-char payload transmitted over weak 2G signals.",
+      "relayTitle": "Nearby relay",
+      "relayDesc": "Mesh peer transmission to surrounding vehicles.",
+      "satTitle": "Satellite SOS",
+      "satDesc": "Direct emergency uplink for remote desert routes.",
+      "active": "Active",
+      "roadmap": "Roadmap"
+    },
+    "platform": {
+      "title": "One platform, three views.",
+      "citizenTitle": "Citizen app",
+      "citizenDesc": "Drive mode, crash countdown, helper network alerts.",
+      "citizenTag": "Mobile",
+      "responderTitle": "Responder console",
+      "responderDesc": "Live map, 3D crash reconstruction, triage queue.",
+      "hospitalTitle": "Hospital dashboard",
+      "hospitalDesc": "3D injury body map, patient profile, live vitals, ETA."
+    },
+    "footer": {
+      "byline": "Built for SolveX 3.0 · HIS University",
+      "disclaimer": "Simulated blackbox stream."
     }
   },
   "hospital": {
