@@ -1,97 +1,72 @@
-# Checkpoint Report: CP1 — Data Layer
+# Checkpoint Report: CP2 — Component Library at `/`
 
 ## Status: COMPLETE (Ready for Review Gate)
 
 ### Deliverables Completed
 
-#### 1. Button & Switch Polish (Resolution of User Feedback)
-- [x] **Root Cause Diagnosis**:
-  - Tailwind CSS v3 `@tailwind base;` emits an unlayered preflight CSS rule (`button, [type='button'] { background-color: transparent; }`).
-  - Wrapping Ant Design with `<StyleProvider layer>` caused Ant Design CSS to reside in `@layer antd`, which CSS Cascade specification automatically deprioritizes below any unlayered rules.
-  - Furthermore, Ant Design's `:where()` selector has specificity `(0, 0, 0)`, allowing Tailwind's `button` selector `(0, 0, 1)` to override Ant Design's button and switch backgrounds to `transparent`.
-  - As a result:
-    - Primary and danger buttons lost their green/red fills and appeared bleached/white with faint borders.
-    - Switch tracks (rendered as `<button role="switch">`) lost their fill, rendering as invisible transparent ghosts on white card backgrounds.
-- [x] **Systemic Fix Applied**:
-  - Replaced `<StyleProvider layer>` with `<StyleProvider hashPriority="high">` in `src/components/app/AppProviders.tsx`.
-  - Defined explicit, high-contrast, tactile CSS rules in `src/styles/globals.css`:
-    - **Primary Button**: Solid Algerian flag green (`#006233`), crisp white (`#FFFFFF`) text, border, elevated shadow, `:hover` (`#007A41`), and `:active` scale (`0.985`, `#004D28`).
-    - **Primary Danger Button**: Solid Algerian flag red (`#D21034`), crisp white text, elevated shadow, `:hover` (`#B80E2D`), and `:active` scale (`0.985`, `#9E0C26`).
-    - **Default Danger Button**: Crisp red outline, `#D21034` text, white background, soft red tint on hover.
-    - **Default Action Button**: Crisp `--surface` (`#FFFFFF`) fill, `--border-strong` (`#D3CCBB`) border, `--ink` text, subtle elevation `--shadow-1`.
-    - **Switch (High Contrast)**:
-      - **Checked (ON)**: Solid flag green (`#006233`), white knob with depth shadow.
-      - **Unchecked (OFF)**: Solid taupe-gray (`#B5B0A4`) with dark border (`#9E988A`), guaranteeing immediate readability on white cards.
-      - **Switch Typography & Padding**: Added min-width (`76px`) and dedicated inner padding so labels like `"Online"`, `"Offline"`, and `"2G / SMS"` are completely visible without clipping.
-  - Added dedicated Buttons and Switches test matrix to `/lab/tokens`.
+All **23 required components** have been delivered and integrated at `/` (`src/app/[locale]/(app)/page.tsx`) with **all states** (default, hover, focus-visible, active, selected, disabled, loading with skeleton, empty, error with retry) in `fr`, `en`, and `ar` (RTL):
 
-#### 2. CP1 Data Layer
-- [x] **Data Contract Types (`src/lib/data/types.ts`)**:
-  - Fully typed domain model matching `DATA_CONTRACT.md` without modification: `M2Level`, `M3Level`, `M4Level`, `BodyRegion`, `ConfidenceStatus`, `Channel`, `LifecycleStatus`, `Position`, `CrashFacts`, `Vitals`, `Profile`, `Occupant`, `TimelineEvent`, `SmsMessage`, `ParsedSms`, `NearbyPerson`, `NearbyVehicle`, `Ambulance`, `HospitalOption`, `Dispatch`, `PrepItem`, `TelemetryWindow`, `Incident`, `SourceEvent`.
-- [x] **SMS Parser with Zod (`src/lib/data/sms.ts`)**:
-  - `parseSms(raw: string)` parsing format: `SOS|lat,lng|HH:MM|C<0-100>|SEV:<LOW|MEDIUM|HIGH|EXTREME>|OCC:<int>|<blood type optional>|ID<digits>`.
-  - Strict validation on coordinates (-90..90, -180..180), 24h time format, confidence score (0..100), and severity enum.
-  - Handles omitted optional blood type and ignores extra trailing telemetry fields.
-  - `formatSms` serializer for encoding alert strings.
-  - 8 unit tests in `src/lib/data/__tests__/sms.test.ts` passing.
-- [x] **Confidence Ladder Engine (`src/lib/data/confidence.ts`)**:
-  - Computes exact weights from `DATA_CONTRACT.md`:
-    - Blackbox impact (+40)
-    - Airbag or rollover (+30)
-    - Phone impact (+15)
-    - Sudden stop (+15)
-    - No movement afterwards (+10)
-    - SOS button, voice trigger, or witness confirmation (jumps to 100)
-    - "I'm OK" citizen response (zeroes to 0)
-    - Dispatcher "Confirm" (sets status to `confirmed`)
-  - Status mapping: `<70` suspected, `70-90` likely, `≥90` likely until witness/SOS (`witness_confirmed`) or dispatcher confirm (`confirmed`).
-  - 7 unit tests in `src/lib/data/__tests__/confidence.test.ts` passing.
-- [x] **Seed Data & Telemetry Simulation**:
-  - `src/lib/data/sim/seed.ts`: RN5 crash site, 3 hospitals with ETA and bed capacities, 3 Protection Civile ambulances, 5 helpers (medic, first-aider, volunteers), 6 vehicles, 6-point route polyline, Patient A profile and M4 body region ratings.
-  - `src/lib/data/sim/telemetry.ts`: 16-second 100 Hz accelerometer, gyroscope, and 1 Hz GPS speed windows following blackbox axes convention (x forward, y left, z up).
-- [x] **Simulator Source (`src/lib/data/sim/scenario.ts`)**:
-  - `SimSource` implementing `IncidentSource`:
-    - t=0: Blackbox impact, score 85, yellow pin
-    - t=2: M2 crash (p=0.98), M3 high, M4 body map arrives
-    - t=3: "Are you OK?" countdown starts
-    - t=33: No answer → score 100, red alert
-    - t=40: Witness confirm (when enabled) → `witness_confirmed`
-    - Dispatcher manual actions: `confirm()`, `assignAmbulance()`, `callForHelp()`, `close()`.
-    - Elapsed progression: +60s on scene, +120s transporting with paramedic cuff vital drift, +240s at hospital.
-    - Degraded Network Mode: When network is toggled off, incident channel becomes `sms`, telemetry is omitted, and outbound SMS notifications appear.
-  - 6 unit integration tests in `src/lib/data/sim/__tests__/scenario.test.ts` passing.
-- [x] **Zustand Stores (`src/lib/stores/`)**:
-  - `useIncidentStore`: pure reducers applying `SourceEvent` (`incident_upsert`, `ambulances`, `sms`, `vitals`, `network`).
-  - `useUiStore`: manages UI states (drawer open/closed, speed multiplier, hovered/selected regions).
-- [x] **Floating Scenario Panel (`src/components/app/ScenarioPanel.tsx`)**:
-  - Ant `FloatButton` + `Drawer` available on every app view.
-  - Real-time controls: Network online/offline switch, witness confirmation toggle, simulation speed (0.5x, 1x, 2x, 5x), restart scenario (t=0), physical SOS trigger, citizen "I'm OK" simulation, and dispatcher action shortcuts.
-  - Displays persistent rule 9 honesty badge: "Simulated blackbox stream".
-- [x] **Data Inspection Lab (`/lab/data`)**:
-  - Top metrics summary (network status, incident ID, lifecycle, channel, confidence).
-  - Live filterable event stream with expandable JSON payloads.
-  - Raw SMS feed rendered in mono with `dir="ltr"` and parsed chips.
-  - Active incident JSON inspector displaying live state changes (e.g. telemetry present in online mode vs omitted in degraded SMS mode).
+#### 1. Badges & Status Tags
+- [x] **`SimBadge`** (`src/components/app/SimBadge.tsx`): Rule 9 honesty label ("Simulated blackbox stream") with persistent magenta pill styling.
+- [x] **`SeverityTag`** (`src/components/app/SeverityTag.tsx`): All M3 levels (Low, Medium, High, Extreme) in small, middle, and large sizes; ranking score percentage; `escalatedBy` tags ("Blood thinners", "Unresponsive"); medical disclaimer caption ("Estimate to prioritise, not a diagnosis"); disabled state.
+- [x] **`StatusTag`** (`src/components/app/StatusTag.tsx`): Full lifecycle progression (detected → dispatched → on_scene → transporting → at_hospital → closed) strictly in brand green per DESIGN line 115; channel icons for DATA and SMS fallback.
+- [x] **`ConfidenceLadder`** (`src/components/app/ConfidenceLadder.tsx`): 4-segment mathematical ladder (Suspected 40-70, Likely 70-90, Witness-confirmed, Confirmed 90+ with pulsating ring and badge).
+
+#### 2. Medical & Triage
+- [x] **`RegionRow`** (`src/components/app/RegionRow.tsx`): 7 body regions (Head, Face, Spine & Neck, Thorax, Abdomen, Upper Limbs, Lower Limbs) with likelihood dots and tags (Unlikely, Check, Likely); active/selected state with 3px inline brand bar; hover glow; focus-visible ring; Enter keyboard accessibility.
+- [x] **`RegionLegend`** (`src/components/app/RegionLegend.tsx`): Color-coded legend (Unlikely grey, Check amber with eye icon, Likely red with target icon) in horizontal and vertical formats.
+- [x] **`ProfileCard`** (`src/components/app/ProfileCard.tsx`): Patient demographics, blood type, chronic diseases, allergies, medications, emergency contact in mono with `dir="ltr"`; high-alert tags for "Blood thinners" and "Pregnant"; loading state with skeleton; empty state.
+- [x] **`PrepChecklist`** (`src/components/app/PrepChecklist.tsx`): Interactive hospital preparation checklist with priority badges (Immediate, Urgent, Routine), why-reason captions, local toggle state, and completed counter.
+
+#### 3. Telemetry & Live Vitals
+- [x] **`VitalsCard`** (`src/components/app/VitalsCard.tsx`): Heart Rate (bpm), Oxygen (SpO₂ %), and Blood Pressure (mmHg) with 60-point responsive SVG sparklines; threshold alert styles (`--sev-high` orange/red) with `▲ display hint` badge for HR >120 / <50, SpO₂ <92, and systolic <90; loading state with skeleton; empty state; error state with retry button.
+- [x] **`Eta`** (`src/components/app/Eta.tsx`): Countdown in `mm:ss` format; bold tabular mono digits; ambulance unit tag; origin road; urgent state (<3 min) with red digits and pulse.
+
+#### 4. Dispatch & Incident Queue
+- [x] **`IncidentRow`** (`src/components/app/IncidentRow.tsx`): Pin color dot from confidence status, road label, formatted time, severity tag, status tag, channel icon (Wifi / Message); selected state with 3px brand bar; new arrival flash animation.
+- [x] **`IncidentPanel`** (`src/components/app/IncidentPanel.tsx`): Composite card for responder view with road header, confidence ladder, 2×2 dispatcher actions grid (Confirm crash, Assign ambulance, Call for help, Close with Popconfirm), triage summary, occupant list, and blackbox crash facts (speed, delta V, impact direction, rollover).
+- [x] **`AmbulanceTable`** (`src/components/app/AmbulanceTable.tsx`): Table of Protection Civile ambulance units with unit ID, base station, ETA in minutes, crew details, status tags, and Assign/Assigned action buttons.
+- [x] **`HospitalOptionCard`** (`src/components/app/HospitalOptionCard.tsx`): AI-recommended hospital option card with star badge, distance, free beds, specialties tags, "Why" criteria chips, and select action button; alternative hospital cards.
+- [x] **`NearbyPeopleList`** (`src/components/app/NearbyPeopleList.tsx`): List of nearby first responders and volunteers with distance in meters, phone numbers, kind tags; medics and first-aiders highlighted in Algerian flag red (`--sev-extreme`) per the civil protection plan.
+
+#### 5. Feed & History
+- [x] **`TimelineList`** (`src/components/app/TimelineList.tsx`): Chronological incident events formatted with category icons (detected, alert sent, witness confirm, dispatcher confirm, ambulance assigned, helper called); newest on top; formatted mono timestamp; loading state; empty state.
+- [x] **`SmsFeed`** (`src/components/app/SmsFeed.tsx`): Inbound and outbound SMS feed cards; raw payload in mono with `dir="ltr"`; parsed chips for confidence, severity, occupants count, blood type; delivery status badges; network status badge (Online / Offline mode).
+
+#### 6. 3D Stage Primitives
+- [x] **`StageFrame`** (`src/components/stage/StageFrame.tsx`): Signature dark stage panel (`--stage-bg: #0B1310`), 48px depth grid, double gradient fade mask (96px, 48px on mobile); unmasked overlay sibling container so interactive controls are never clipped.
+- [x] **`StageControls`** (`src/components/stage/StageControls.tsx`): Unmasked overlay controls with Front / Back / Free segmented view switcher, M4 estimate tooltip badge, reset view button, and medical disclaimer caption.
+- [x] **`TelemetryTrace`** (`src/components/stage/TelemetryTrace.tsx`): 80px high resultant g curve; impact marker line at t=5s in `--stage-impact` (`#FF4D5E`); current playhead indicator; play/pause button; speed multiplier buttons (0.25×, 0.5×, 1×); "Go to impact" jump button; synced scrubber slider.
+
+#### 7. Utility & Layout Components
+- [x] **`EmptyState`** (`src/components/app/EmptyState.tsx`): Minimalist empty states (one line, one icon, no illustrations per DESIGN.md line 127) for incidents, patients, vitals, and telemetry.
+- [x] **`LangSwitcher`** (`src/components/ui/LangSwitcher.tsx`): Rounded pill language switcher with active brand fill and RTL flip support.
+- [x] **`ScenarioPanel`** (`src/components/app/ScenarioPanel.tsx`): Integrated floating simulation drawer shortcut.
 
 ---
 
 ### Verification Suite
+
 - **TypeScript**: `pnpm typecheck` (`tsc --noEmit`) → **0 errors**.
 - **ESLint**: `pnpm lint` (`next lint`) → **0 warnings, 0 errors**.
-- **Vitest Unit & Integration Tests**: `pnpm test` (`vitest run`) → **25 / 25 passed**.
-- **i18n Key Parity**: `pnpm i18n:check` → **95 / 95 matching keys** across `fr`, `en`, and `ar`.
-- **Production Build**: `pnpm build` (`next build`) → Succeeded, 24 SSG static pages generated.
-- **Visual & Browser Verification**: Verified via Playwright headless browser:
-  - Button states (Primary, Primary Danger, Default, Danger, Dashed, Link, Sizes).
-  - Switch states (Checked, Unchecked, Online, Offline, 2G/SMS, Small, Disabled).
+- **Vitest Unit Tests**: `pnpm test` (`vitest run`) → **32 / 32 passed** (5 test suites).
+- **i18n Key Parity**: `pnpm i18n:check` → **118 / 118 matching keys** across `fr`, `en`, and `ar`.
+- **Production Build**: `pnpm build` (`next build`) → **Succeeded**, 24 SSG static pages generated.
+- **Visual Browser Verification (Playwright)**: Verified all tabs and components in English (LTR) and Arabic (RTL).
 
 ---
 
-### Verified Screenshots
-- Buttons & Switches Verification Matrix: [`docs/screenshots/cp1-buttons-and-switches.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-buttons-and-switches.png)
-- Network Switch (Online State - Flag Green `#006233`): [`docs/screenshots/cp1-data-online-switch.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-data-online-switch.png)
-- Network Switch (Offline State - High-contrast Taupe `#B5B0A4`): [`docs/screenshots/cp1-data-offline-switch.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-data-offline-switch.png)
-- Scenario Panel Drawer Controls & Switches: [`docs/screenshots/cp1-scenario-drawer-switches.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp1-scenario-drawer-switches.png)
+### Screenshots
+
+- Badges & Status Tags: [`docs/screenshots/cp2-lab-badges.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp2-lab-badges.png)
+- Medical & Triage (RegionRow, ProfileCard, PrepChecklist): [`docs/screenshots/cp2-lab-medical.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp2-lab-medical.png)
+- Telemetry & Live Vitals (Normal vs Alert Sparklines): [`docs/screenshots/cp2-lab-vitals.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp2-lab-vitals.png)
+- Vitals States & Eta Countdown: [`docs/screenshots/cp2-lab-vitals-states.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp2-lab-vitals-states.png)
+- Dispatch & Incident Queue: [`docs/screenshots/cp2-lab-dispatch.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp2-lab-dispatch.png)
+- Ambulances & Hospital Options: [`docs/screenshots/cp2-lab-ambulances.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp2-lab-ambulances.png)
+- SMS Feed & Timeline: [`docs/screenshots/cp2-lab-feed.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp2-lab-feed.png)
+- 3D Stage Frame & Telemetry Trace: [`docs/screenshots/cp2-lab-stage.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp2-lab-stage.png)
+- Arabic RTL Layout (`/ar`): [`docs/screenshots/cp2-lab-arabic-rtl.png`](file:///e:/Project/SOLVEX/docs/screenshots/cp2-lab-arabic-rtl.png)
 
 ---
 
@@ -104,6 +79,6 @@ None.
 ---
 
 ### Review Gate
-Per Hard Rule 3 in `GEMINI.md`:
-Work on **CP1** and the button/switch visual resolution is complete. Execution is stopped at this gate awaiting explicit human approval:
-`approved CP1`
+Per **Hard Rule 3** in `GEMINI.md`:
+Work on **CP2** is complete. Execution is stopped at this gate awaiting explicit human approval:
+`approved CP2`
