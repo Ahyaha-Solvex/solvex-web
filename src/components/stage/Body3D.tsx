@@ -155,8 +155,8 @@ function AnchorSphere({
 
   const color = useMemo(() => new THREE.Color(colorHex), [colorHex]);
 
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
+  useFrame(() => {
+    const t = performance.now() * 0.001;
 
     if (sphereRef.current) {
       if (level === 'likely') {
@@ -188,7 +188,7 @@ function AnchorSphere({
 
   if (!isVisible) return null;
 
-  const showHtmlLabel = isHovered || isSelected || isCalibrating;
+  const showHtmlLabel = isHovered || isSelected;
 
   return (
     <group position={anchor.position}>

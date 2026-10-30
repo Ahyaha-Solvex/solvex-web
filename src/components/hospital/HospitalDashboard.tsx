@@ -397,8 +397,10 @@ export function HospitalDashboard() {
                       column={1}
                       bordered
                       className="bg-surface text-xs"
-                      labelStyle={{ width: '40%', color: 'var(--muted)', fontWeight: 500 }}
-                      contentStyle={{ color: 'var(--ink)' }}
+                      styles={{
+                        label: { width: '40%', color: 'var(--muted)', fontWeight: 500 },
+                        content: { color: 'var(--ink)' },
+                      }}
                     >
                       <Descriptions.Item label="Age / Sex">
                         {activeOccupant.profile.ageYears} yrs ·{' '}

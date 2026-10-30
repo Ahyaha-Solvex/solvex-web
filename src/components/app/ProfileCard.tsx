@@ -86,8 +86,10 @@ export function ProfileCard({
         column={1}
         bordered
         className="bg-surface text-xs"
-        labelStyle={{ width: '38%', color: 'var(--muted)', fontWeight: 500 }}
-        contentStyle={{ color: 'var(--ink)' }}
+        styles={{
+          label: { width: '38%', color: 'var(--muted)', fontWeight: 500 },
+          content: { color: 'var(--ink)' },
+        }}
       >
         <Descriptions.Item label="Age / Sex">
           {profile.ageYears} yrs · {isMale ? 'Male' : 'Female'}
