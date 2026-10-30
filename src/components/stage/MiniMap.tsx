@@ -5,6 +5,10 @@ import * as maplibregl from 'maplibre-gl';
 import { Maximize2 } from 'lucide-react';
 import type { Incident, Ambulance } from '@/lib/data/types';
 
+if (typeof window !== 'undefined') {
+  maplibregl.config.WORKER_URL = '/maplibre-gl-worker.mjs';
+}
+
 export interface MiniMapProps {
   incident?: Incident | null;
   ambulances?: Ambulance[];
