@@ -1,189 +1,194 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Button, Slider } from 'antd';
-import {
-  CaretRightOutlined,
-  PauseOutlined,
-  ThunderboltFilled,
-} from '@ant-design/icons';
+import React, { useMemo, useRef } from 'react';
+import type { TelemetryWindow } from '@/lib/data/types';
+import { useReplayStore } from '@/lib/stores/replayStore';
+import { STAGE_COLORS } from '@/lib/three/materials';
 
 export interface TelemetryTraceProps {
-  currentTime?: number; // 0..16s
-  impactTime?: number; // default 5.0s
-  totalDuration?: number; // 16.0s
-  samples?: number[]; // resultant g samples (e.g. 1600 samples)
+  telemetry?: TelemetryWindow;
+  currentTime?: number;
+  impactTime?: number;
+  totalDuration?: number;
   isPlaying?: boolean;
   speed?: number;
-  onSeek?: (time: number) => void;
+  onSeek?: (t: number) => void;
   onTogglePlay?: () => void;
   onGoToImpact?: () => void;
-  onSpeedChange?: (speed: number) => void;
+  onSpeedChange?: (s: number) => void;
   className?: string;
 }
 
+/**
+ * Telemetry Trace Strip (Resultant g over time, 80px high)
+ * SPEC_RESPONDER: strip synced to replay clock; line --stage-ink, impact marker --stage-impact.
+ */
 export function TelemetryTrace({
-  currentTime = 5.0,
-  impactTime = 5.0,
-  totalDuration = 16.0,
-  samples,
-  isPlaying = false,
-  speed = 1.0,
+  telemetry,
+  currentTime: controlledCurrentTime,
+  impactTime: controlledImpactTime,
+  totalDuration: controlledTotalDuration,
   onSeek,
-  onTogglePlay,
-  onGoToImpact,
-  onSpeedChange,
   className = '',
 }: TelemetryTraceProps) {
-  // Generate synthetic resultant g wave if not provided
-  const traceData = useMemo(() => {
-    if (samples && samples.length > 0) return samples;
-    // 160 samples for an 80px high strip
-    return Array.from({ length: 160 }, (_, i) => {
-      const t = (i / 160) * totalDuration;
-      // Pre-crash normal driving: 0.1 - 0.3g
-      if (t < impactTime - 0.2) return 0.2 + Math.sin(i * 0.3) * 0.08;
-      // Impact spike: sharp impulse peak ~28g
-      if (t >= impactTime - 0.2 && t <= impactTime + 0.6) {
-        const dist = Math.abs(t - impactTime);
-        return Math.max(0.5, 28 * Math.exp(-dist * 12) + Math.sin(i * 2) * 3);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const storeCurrentTimeMs = useReplayStore((s) => s.currentTimeMs);
+  const storeDurationMs = useReplayStore((s) => s.durationMs);
+  const storeImpactAtMs = useReplayStore((s) => s.impactAtMs);
+  const setTime = useReplayStore((s) => s.setTime);
+
+  // Reconcile props vs store (props in seconds, store in ms)
+  const currentTimeMs =
+    controlledCurrentTime !== undefined
+      ? controlledCurrentTime * 1000
+      : storeCurrentTimeMs;
+  const durationMs =
+    controlledTotalDuration !== undefined
+      ? controlledTotalDuration * 1000
+      : storeDurationMs;
+  const impactAtMs =
+    controlledImpactTime !== undefined
+      ? controlledImpactTime * 1000
+      : storeImpactAtMs;
+
+  // Generate or sample the resultant acceleration g array across the 16s window
+  const { points, maxG } = useMemo(() => {
+    const totalPoints = 160; // 10 points per second for crisp SVG path
+    const data: number[] = [];
+    let peak = 14;
+
+    if (telemetry?.accel && telemetry.accel.length > 0) {
+      const step = Math.max(1, Math.floor(telemetry.accel.length / totalPoints));
+      for (let i = 0; i < telemetry.accel.length; i += step) {
+        const [x, y, z] = telemetry.accel[i];
+        const mag = Math.sqrt(x * x + y * y + z * z);
+        data.push(mag);
+        if (mag > peak) peak = mag;
       }
-      // Post-crash resting: 0.05g
-      return 0.1 + Math.sin(i * 0.5) * 0.04;
-    });
-  }, [samples, totalDuration, impactTime]);
+    } else {
+      // Realistic pre/post crash profile
+      const impactIdx = Math.floor((impactAtMs / durationMs) * totalPoints);
+      for (let i = 0; i < totalPoints; i++) {
+        if (i < impactIdx - 3) {
+          // Pre-crash normal driving vibrations (0.9 to 1.1 g)
+          data.push(1.0 + Math.sin(i * 1.5) * 0.12);
+        } else if (i >= impactIdx - 3 && i <= impactIdx + 4) {
+          // Extreme deceleration spike at impact
+          const distFromImpact = Math.abs(i - impactIdx);
+          const spike = 15.2 * Math.exp(-distFromImpact * 0.7);
+          data.push(spike);
+        } else {
+          // Post-impact settling to rest
+          const decay = Math.exp(-(i - impactIdx) * 0.1);
+          data.push(1.0 + decay * 2.5 * Math.sin(i * 0.8));
+        }
+      }
+    }
 
-  const maxG = Math.max(...traceData, 30);
-  const width = 640;
-  const height = 80;
+    return { points: data, maxG: Math.max(peak, 16) };
+  }, [telemetry, impactAtMs, durationMs]);
 
-  // Compute SVG line points
-  const points = traceData.map((val, idx) => {
-    const x = (idx / (traceData.length - 1)) * width;
-    const y = height - (val / maxG) * (height - 12) - 6;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
+  // Construct SVG Polyline path
+  const svgPath = useMemo(() => {
+    if (points.length === 0) return '';
+    const width = 400;
+    const height = 60; // Leave 20px padding in 80px container
+    const stepX = width / (points.length - 1);
 
-  const pathD = `M ${points.join(' L ')}`;
-  const currentX = (currentTime / totalDuration) * width;
-  const impactX = (impactTime / totalDuration) * width;
+    return points
+      .map((g, idx) => {
+        const x = idx * stepX;
+        // Invert Y: 0g is at bottom (y = height), maxG is at top (y = 4)
+        const y = height - (g / maxG) * (height - 8);
+        return `${idx === 0 ? 'M' : 'L'} ${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+  }, [points, maxG]);
+
+  // Calculate cursor positions
+  const currentRatio = Math.max(0, Math.min(currentTimeMs / durationMs, 1.0));
+  const impactRatio = Math.max(0, Math.min(impactAtMs / durationMs, 1.0));
+
+  // Handle click on trace to scrub
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const fraction = Math.max(0, Math.min(clickX / rect.width, 1));
+    const targetMs = fraction * durationMs;
+    setTime(targetMs);
+    onSeek?.(targetMs / 1000);
+  };
 
   return (
     <div
-      className={`p-3 rounded-xl bg-stage-bg/95 backdrop-blur-md border border-stage-grid text-stage-ink shadow-2 space-y-2 select-none ${className}`}
+      ref={containerRef}
+      onClick={handleClick}
+      className={`relative h-[80px] w-full max-w-lg px-2.5 py-1.5 rounded-xl bg-[#0B1310]/85 backdrop-blur-md border border-white/10 shadow-lg cursor-pointer select-none group overflow-hidden ${className}`}
+      title="Click to scrub replay time"
     >
-      {/* Top Header: Current Telemetry g readout + Playback controls */}
-      <div className="flex items-center justify-between text-xs gap-3">
-        <div className="flex items-center gap-2">
-          <Button
-            size="small"
-            type="primary"
-            icon={isPlaying ? <PauseOutlined /> : <CaretRightOutlined />}
-            onClick={onTogglePlay}
-            className="text-xs font-mono"
-          >
-            {isPlaying ? 'Pause' : 'Play'}
-          </Button>
-
-          <Button
-            size="small"
-            icon={<ThunderboltFilled className="text-stage-impact" />}
-            onClick={onGoToImpact}
-            className="text-xs bg-surface/10 border-stage-grid text-stage-ink hover:text-white"
-          >
-            Go to impact (t=5s)
-          </Button>
-
-          <div className="flex items-center gap-1 font-mono text-[11px] text-stage-muted ms-2">
-            <span>Speed:</span>
-            {[0.25, 0.5, 1.0].map((s) => (
-              <button
-                key={s}
-                onClick={() => onSpeedChange?.(s)}
-                className={`px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors ${
-                  speed === s
-                    ? 'bg-brand text-white font-bold'
-                    : 'text-stage-muted hover:text-stage-ink'
-                }`}
-              >
-                {s}×
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 font-mono tabular-nums">
-          <span className="text-stage-muted text-[11px]">Time:</span>
-          <span className="text-stage-ink font-bold text-xs">{currentTime.toFixed(2)}s</span>
-          <span className="text-stage-muted text-[11px]">/ {totalDuration}s</span>
-        </div>
+      {/* Header labels */}
+      <div className="flex items-center justify-between text-[10px] font-mono text-[#8FA097] px-1 pointer-events-none">
+        <span className="uppercase font-semibold tracking-wider">Resultant Acceleration (g)</span>
+        <span>Peak {maxG.toFixed(1)}g</span>
       </div>
 
-      {/* SVG Resultant G Trace Strip */}
-      <div className="relative w-full overflow-hidden rounded bg-black/40 border border-stage-grid/50 h-[80px]">
+      {/* SVG Waveform Area */}
+      <div className="relative w-full h-[52px] mt-0.5">
         <svg
-          viewBox={`0 0 ${width} ${height}`}
+          viewBox="0 0 400 60"
           preserveAspectRatio="none"
-          className="w-full h-full"
+          className="w-full h-full overflow-visible"
         >
-          {/* Subtle horizontal grid lines */}
-          <line x1="0" y1="20" x2={width} y2="20" stroke="rgba(255,255,255,0.08)" strokeDasharray="2 4" />
-          <line x1="0" y1="40" x2={width} y2="40" stroke="rgba(255,255,255,0.08)" strokeDasharray="2 4" />
-          <line x1="0" y1="60" x2={width} y2="60" stroke="rgba(255,255,255,0.08)" strokeDasharray="2 4" />
+          {/* Subtle grid lines */}
+          <line x1="0" y1="56" x2="400" y2="56" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+          <line x1="0" y1="28" x2="400" y2="28" stroke="rgba(255,255,255,0.06)" strokeWidth="1" strokeDasharray="2,2" />
 
-          {/* Impact Marker Line */}
-          <line
-            x1={impactX}
-            y1="0"
-            x2={impactX}
-            y2={height}
-            stroke="var(--stage-impact)"
-            strokeWidth="1.5"
-            strokeDasharray="3 3"
+          {/* Area fill under curve */}
+          <path
+            d={`${svgPath} L 400,60 L 0,60 Z`}
+            fill="url(#traceGradient)"
+            opacity={0.3}
           />
 
-          {/* Acceleration Curve */}
+          {/* Curve stroke (--stage-ink: #E8EEEA) */}
           <path
-            d={pathD}
+            d={svgPath}
             fill="none"
-            stroke="var(--stage-ink)"
-            strokeWidth="2"
+            stroke="#E8EEEA"
+            strokeWidth="1.75"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
 
-          {/* Active Playhead Line */}
-          <line
-            x1={currentX}
-            y1="0"
-            x2={currentX}
-            y2={height}
-            stroke="var(--brand)"
-            strokeWidth="2"
-          />
+          <defs>
+            <linearGradient id="traceGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#E8EEEA" stopOpacity="0.4" />
+              <stop offset="100%" stopColor="#E8EEEA" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
         </svg>
 
-        {/* Impact Marker Label */}
+        {/* Impact Marker Line (--stage-impact: #FF4D5E) */}
         <div
-          className="absolute top-1 text-[9px] font-mono text-stage-impact uppercase font-bold pointer-events-none"
-          style={{ insetInlineStart: `${(impactTime / totalDuration) * 100}%`, transform: 'translateX(-50%)' }}
+          className="absolute top-0 bottom-0 w-[1.5px] bg-[#FF4D5E] pointer-events-none z-10 shadow-[0_0_8px_#FF4D5E]"
+          style={{ left: `${impactRatio * 100}%` }}
         >
-          Impact
+          <span className="absolute -top-1 -translate-x-1/2 text-[9px] font-mono font-bold text-[#FF4D5E]">
+            T=0
+          </span>
         </div>
-      </div>
 
-      {/* Scrubber Slider */}
-      <div className="px-1">
-        <Slider
-          min={0}
-          max={totalDuration}
-          step={0.05}
-          value={currentTime}
-          onChange={(val) => onSeek?.(val)}
-          tooltip={{ formatter: (val) => `${val?.toFixed(2)}s` }}
-          className="m-0"
-        />
+        {/* Current Replay Playhead Cursor */}
+        <div
+          className="absolute top-0 bottom-0 w-[2px] bg-white pointer-events-none z-20 shadow-[0_0_6px_#ffffff]"
+          style={{ left: `${currentRatio * 100}%` }}
+        >
+          <div className="w-2 h-2 rounded-full bg-white -translate-x-[3px] -top-0.5 shadow" />
+        </div>
       </div>
     </div>
   );
 }
+
+export default TelemetryTrace;

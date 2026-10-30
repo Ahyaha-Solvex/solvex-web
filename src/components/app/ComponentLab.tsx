@@ -627,10 +627,10 @@ export function ComponentLab() {
               totalDuration={16.0}
               isPlaying={isPlaying}
               speed={replaySpeed}
-              onSeek={(t) => setReplayTime(t)}
+              onSeek={(t: number) => setReplayTime(t)}
               onTogglePlay={() => setIsPlaying(!isPlaying)}
               onGoToImpact={() => setReplayTime(5.0)}
-              onSpeedChange={(s) => setReplaySpeed(s)}
+              onSpeedChange={(s: number) => setReplaySpeed(s)}
             />
           </Card>
         </div>
