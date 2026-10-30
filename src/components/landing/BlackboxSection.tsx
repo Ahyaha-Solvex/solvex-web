@@ -118,7 +118,7 @@ export function BlackboxSection() {
             }`}
             style={{ opacity: isCarouselActive ? carouselOpacity : 0 }}
           >
-            <div className="w-full max-w-6xl mx-auto pt-16">
+            <div className="w-full max-w-6xl mx-auto pt-4 md:pt-8">
               <ComponentCarousel
                 activeIndex={carouselIndex}
                 onSelectComponent={setCarouselIndex}
@@ -144,16 +144,18 @@ export function BlackboxSection() {
           </div>
         </div>
 
-        {/* Floating Simulator HUD */}
-        <SequenceSimulator
-          currentFrame={currentFrame}
-          totalFrames={totalFrames}
-          onFrameChange={handleFrameChange}
-          isPlaying={isPlaying}
-          onTogglePlay={togglePlay}
-          speed={speed}
-          onSpeedChange={setSpeed}
-        />
+        {/* Floating Simulator HUD - Only active with ?debug=1 or ?simulator=1 */}
+        {isSimulatorMode && (
+          <SequenceSimulator
+            currentFrame={currentFrame}
+            totalFrames={totalFrames}
+            onFrameChange={handleFrameChange}
+            isPlaying={isPlaying}
+            onTogglePlay={togglePlay}
+            speed={speed}
+            onSpeedChange={setSpeed}
+          />
+        )}
       </div>
     </section>
   );

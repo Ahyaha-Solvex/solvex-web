@@ -25,7 +25,7 @@ export function Stats() {
   ];
 
   return (
-    <section className="py-24 px-6 md:px-12 bg-surface/50 border-y border-border">
+    <section className="py-24 px-6 md:px-12 bg-transparent">
       <div className="max-w-7xl mx-auto">
         <div className="text-center max-w-xl mx-auto mb-16">
           <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-ink">

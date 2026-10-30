@@ -79,13 +79,16 @@ export function ScrollSequence({
       ctx.fillStyle = '#FAF8F3';
       ctx.fillRect(0, 0, cw, ch);
 
-      // Fit cover with subject centered at ~38% from top per SPEC_LANDING
-      const scale = Math.max(cw / img.naturalWidth, ch / img.naturalHeight);
+      // Fit contain inside the upper 58% of viewport per SPEC_LANDING (leaving bottom 30% for copy)
+      const targetMaxH = ch * 0.58;
+      const targetMaxW = cw * 0.90;
+      const scale = Math.min(targetMaxW / img.naturalWidth, targetMaxH / img.naturalHeight);
       const w = img.naturalWidth * scale;
       const h = img.naturalHeight * scale;
 
       const x = (cw - w) / 2;
-      const y = (ch - h) * 0.38;
+      // Center the device vertically around 38% from top of viewport
+      const y = (ch * 0.38) - (h / 2);
 
       ctx.drawImage(img, x, y, w, h);
       shownFrameRef.current = idx;
