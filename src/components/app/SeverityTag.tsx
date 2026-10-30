@@ -63,9 +63,9 @@ export function SeverityTag({
   }[severity];
 
   const sizeClasses = {
-    small: 'text-[11px] px-2 py-0.5 rounded-[4px] gap-1.5 h-6',
-    middle: 'text-xs px-2.5 py-1 rounded-[6px] font-semibold gap-1.5 h-7',
-    large: 'text-sm font-semibold px-4 py-2 rounded-[8px] gap-2 h-10',
+    small: 'text-xs px-3 py-1.5 min-h-[28px] rounded-md gap-1.5',
+    middle: 'text-xs px-3.5 py-2 min-h-[34px] rounded-lg font-semibold gap-2',
+    large: 'text-sm px-4 py-2.5 min-h-[40px] rounded-lg font-bold gap-2.5',
   }[size];
 
   const tagContent = (

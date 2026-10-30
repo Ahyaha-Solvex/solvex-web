@@ -78,8 +78,8 @@ export function StatusTag({
   }[status];
 
   const sizeClasses = {
-    small: 'text-[11px] px-2 py-0.5 rounded-[4px] gap-1.5 h-6',
-    middle: 'text-xs px-2.5 py-1 rounded-[6px] font-semibold gap-1.5 h-7',
+    small: 'text-xs px-3 py-1.5 min-h-[28px] rounded-md gap-1.5',
+    middle: 'text-xs px-3.5 py-2 min-h-[34px] rounded-lg font-semibold gap-2',
   }[size];
 
   const effectiveTextColor = disabled ? 'var(--muted)' : config.textColor;
