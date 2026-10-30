@@ -143,9 +143,38 @@ body {
   transform: none !important;
 }
 
-/* --- Button Tactile Transitions --- */
+/* --- Button Tactile Transitions & Sizing --- */
 .ant-btn {
   transition: all var(--dur-fast) var(--ease-out) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding-inline: 16px !important;
+}
+.ant-btn-sm {
+  padding-inline: 12px !important;
+}
+.ant-btn-lg {
+  padding-inline: 24px !important;
+}
+
+/* =============================================================
+   ANT DESIGN TAGS (Horizontal Alignment & Crisp Contrast)
+   ============================================================= */
+.ant-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+.ant-tag > span,
+.ant-tag .anticon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
 }
 
 /* =============================================================

@@ -49,23 +49,15 @@ export function IncidentRow({
       aria-pressed={selected}
       onClick={onClick}
       onKeyDown={handleKeyDown}
-      className={`relative group p-3 rounded-lg border transition-all duration-fast cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2 ${
+      className={`group p-3 rounded-lg border transition-all duration-fast cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2 ${
         isNew ? 'animate-pulse bg-brand-subtle' : ''
       } ${
         selected
-          ? 'bg-brand-subtle border-brand shadow-sm'
+          ? 'bg-brand-subtle border-brand ring-1 ring-brand/30 shadow-sm'
           : 'bg-surface border-border hover:bg-surface-2 hover:border-border-strong'
       } ${className}`}
     >
-      {/* 3px Brand Bar on Selected */}
-      {selected && (
-        <span
-          className="absolute inset-y-1 inset-inline-start-1 w-1 bg-brand rounded-full"
-          aria-hidden="true"
-        />
-      )}
-
-      <div className="ps-1.5 space-y-2">
+      <div className="space-y-2">
         {/* Top line: Pin dot + Road Label + Time */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">

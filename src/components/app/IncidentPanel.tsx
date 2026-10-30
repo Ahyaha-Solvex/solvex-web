@@ -8,6 +8,7 @@ import {
   PhoneOutlined,
   CloseCircleOutlined,
   CompassOutlined,
+  CarOutlined,
 } from '@ant-design/icons';
 import { useTranslations } from 'next-intl';
 import type { Incident } from '@/lib/data/types';
@@ -62,6 +63,60 @@ export function IncidentPanel({
         </div>
       </Card>
 
+      {/* Dispatched Unit Card */}
+      {incident.dispatch?.ambulanceId && (
+        <Card size="small" className="bg-surface border-border shadow-1">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted">
+                Unité Engagée
+              </span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded bg-brand-subtle text-brand border border-brand/20">
+                En route
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-lg bg-surface-2 border border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-brand/10 text-brand flex items-center justify-center shrink-0">
+                  <CarOutlined className="text-base" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-ink">
+                    Ambulance {incident.dispatch.ambulanceId.toUpperCase()}
+                  </div>
+                  <div className="text-[11px] text-muted">
+                    Protection Civile · Bouira
+                  </div>
+                </div>
+              </div>
+
+              {incident.dispatch.etaToSceneS !== undefined && (
+                <div className="text-end">
+                  <div className="font-mono text-sm font-bold text-brand">
+                    {Math.round(incident.dispatch.etaToSceneS / 60)} min
+                  </div>
+                  <div className="text-[10px] text-muted uppercase font-medium">
+                    ETA sur site
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {incident.dispatch.hospitalId && (
+              <div className="flex items-center justify-between text-xs px-1 text-muted">
+                <span>Hôpital de destination :</span>
+                <span className="font-semibold text-ink">
+                  {incident.dispatch.hospitalId === 'hosp-bouira'
+                    ? 'EPH Bouira'
+                    : incident.dispatch.hospitalId}
+                </span>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
       {/* 2. Dispatcher Actions (2x2 Grid) */}
       <Card size="small" className="bg-surface border-border shadow-1">
         <div className="grid grid-cols-2 gap-2">
@@ -70,7 +125,7 @@ export function IncidentPanel({
             disabled={incident.confidence.status === 'confirmed'}
             onClick={onConfirm}
             icon={<AlertOutlined />}
-            className="w-full text-xs"
+            className="w-full text-xs font-semibold h-9"
           >
             {t('actions.confirm')}
           </Button>
@@ -80,16 +135,16 @@ export function IncidentPanel({
             disabled={incident.lifecycle !== 'detected'}
             onClick={onAssignAmbulance}
             icon={<SendOutlined />}
-            className="w-full text-xs"
+            className="w-full text-xs font-semibold h-9"
           >
-            {t('actions.assignAmbulance')}
+            {incident.lifecycle === 'dispatched' ? 'Ambulance affectée' : t('actions.assignAmbulance')}
           </Button>
 
           <Button
             type="default"
             onClick={onCallForHelp}
             icon={<PhoneOutlined />}
-            className="w-full text-xs"
+            className="w-full text-xs font-semibold h-9"
           >
             {t('actions.callForHelp')}
           </Button>
@@ -104,7 +159,7 @@ export function IncidentPanel({
             <Button
               danger
               icon={<CloseCircleOutlined />}
-              className="w-full text-xs"
+              className="w-full text-xs font-semibold h-9"
             >
               {t('actions.close')}
             </Button>

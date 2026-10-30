@@ -75,7 +75,7 @@ export function ScenarioPanel() {
           </div>
         }
         placement="right"
-        width={380}
+        width={420}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
       >
@@ -157,30 +157,35 @@ export function ScenarioPanel() {
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted">
               Déclencheurs Événements
             </h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  block
+                  icon={<ReloadOutlined />}
+                  onClick={handleRestart}
+                  className="px-3 text-xs font-semibold h-10"
+                >
+                  Recommencer (t=0)
+                </Button>
+                <Button
+                  block
+                  danger
+                  icon={<ThunderboltOutlined />}
+                  onClick={() => source.triggerSos()}
+                  className="px-3 text-xs font-semibold h-10"
+                >
+                  Bouton SOS (100%)
+                </Button>
+              </div>
               <Button
                 block
-                icon={<ReloadOutlined />}
-                onClick={handleRestart}
+                onClick={() => source.triggerUserOk()}
+                icon={<CheckCircleOutlined />}
+                className="px-4 text-xs font-semibold h-10"
               >
-                Recommencer (t=0)
-              </Button>
-              <Button
-                block
-                danger
-                icon={<ThunderboltOutlined />}
-                onClick={() => source.triggerSos()}
-              >
-                Bouton SOS (100%)
+                Simuler Conducteur : &ldquo;Je vais bien&rdquo; (0%)
               </Button>
             </div>
-            <Button
-              block
-              onClick={() => source.triggerUserOk()}
-              icon={<CheckCircleOutlined />}
-            >
-              Simuler Conducteur : &ldquo;Je vais bien&rdquo; (0%)
-            </Button>
           </div>
 
           <Divider className="my-2 border-border" />

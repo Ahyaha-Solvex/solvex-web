@@ -38,34 +38,34 @@ export function SeverityTag({
   const config = {
     low: {
       color: 'var(--sev-low)',
-      textClass: 'text-white',
+      textColor: '#FFFFFF',
       icon: <CheckCircleFilled />,
       label: t('low'),
     },
     medium: {
       color: 'var(--sev-medium)',
-      textClass: 'text-ink font-semibold',
+      textColor: '#14201A',
       icon: <InfoCircleFilled />,
       label: t('medium'),
     },
     high: {
       color: 'var(--sev-high)',
-      textClass: 'text-white',
+      textColor: '#FFFFFF',
       icon: <WarningFilled />,
       label: t('high'),
     },
     extreme: {
       color: 'var(--sev-extreme)',
-      textClass: 'text-white',
+      textColor: '#FFFFFF',
       icon: <ExclamationCircleFilled />,
       label: t('extreme'),
     },
   }[severity];
 
   const sizeClasses = {
-    small: 'text-xs px-2 py-0.5 rounded-[4px]',
-    middle: 'text-xs px-2.5 py-1 rounded-[6px] font-medium',
-    large: 'text-base font-semibold px-4 py-2 rounded-[10px] h-10 inline-flex items-center gap-2',
+    small: 'text-[11px] px-2 py-0.5 rounded-[4px] gap-1.5 h-6',
+    middle: 'text-xs px-2.5 py-1 rounded-[6px] font-semibold gap-1.5 h-7',
+    large: 'text-sm font-semibold px-4 py-2 rounded-[8px] gap-2 h-10',
   }[size];
 
   const tagContent = (
@@ -73,16 +73,20 @@ export function SeverityTag({
       style={{
         backgroundColor: disabled ? 'var(--surface-2)' : config.color,
         borderColor: disabled ? 'var(--border)' : config.color,
-        color: disabled ? 'var(--muted)' : undefined,
+        color: disabled ? 'var(--muted)' : config.textColor,
       }}
-      className={`m-0 border inline-flex items-center gap-1.5 transition-all shadow-sm ${
-        disabled ? 'opacity-60 cursor-not-allowed' : config.textClass
+      className={`m-0 border inline-flex items-center transition-all shadow-xs select-none whitespace-nowrap ${
+        disabled ? 'opacity-60 cursor-not-allowed' : ''
       } ${sizeClasses} ${className}`}
     >
-      {showIcon && <span className="flex items-center">{config.icon}</span>}
-      <span>{config.label}</span>
+      {showIcon && (
+        <span className="inline-flex items-center justify-center shrink-0 text-[1.1em]">
+          {config.icon}
+        </span>
+      )}
+      <span className="leading-none">{config.label}</span>
       {rankingScore !== undefined && size === 'small' && (
-        <span className="font-mono opacity-90 ms-1 text-[11px]">
+        <span className="font-mono opacity-90 ms-1 text-[10px]">
           ({Math.round(rankingScore * 100)}%)
         </span>
       )}

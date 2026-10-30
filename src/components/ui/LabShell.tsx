@@ -122,7 +122,7 @@ export function LabShell({ children }: LabShellProps) {
                           href={item.href}
                           className={`flex items-center justify-between px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors focus-visible:outline-none ${
                             isActive
-                              ? 'bg-brand-subtle text-brand font-semibold border-inline-start-2 border-brand'
+                              ? 'bg-brand-subtle text-brand font-semibold shadow-xs'
                               : 'text-ink-2 hover:bg-surface-2 hover:text-ink'
                           }`}
                         >

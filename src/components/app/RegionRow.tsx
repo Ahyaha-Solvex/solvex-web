@@ -67,24 +67,16 @@ export function RegionRow({
       onKeyDown={handleKeyDown}
       onMouseEnter={() => onHover?.(region)}
       onMouseLeave={() => onHover?.(null)}
-      className={`relative group flex items-center justify-between p-2.5 rounded-lg border transition-all duration-fast cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2 ${
+      className={`group flex items-center justify-between p-2.5 rounded-lg border transition-all duration-fast cursor-pointer select-none focus-visible:outline-2 focus-visible:outline-brand focus-visible:outline-offset-2 ${
         selected
-          ? 'bg-brand-subtle border-brand shadow-sm'
+          ? 'bg-brand-subtle border-brand ring-1 ring-brand/30 shadow-sm'
           : hovered
           ? 'bg-surface-2 border-border-strong'
           : 'bg-surface border-border hover:bg-surface-2 hover:border-border-strong'
       } ${className}`}
     >
-      {/* Selected 3px brand bar per DESIGN.md */}
-      {selected && (
-        <span
-          className="absolute inset-y-1 inset-inline-start-1 w-1 bg-brand rounded-full"
-          aria-hidden="true"
-        />
-      )}
-
       {/* Region Name with colored indicator */}
-      <div className="flex items-center gap-2.5 ps-1.5 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0">
         <span
           className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs"
           style={{ backgroundColor: levelConfig.dotColor }}

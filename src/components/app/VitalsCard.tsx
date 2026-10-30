@@ -1,11 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Card, Tag, Skeleton, Alert, Button } from 'antd';
+import { Card, Tag, Skeleton, Button } from 'antd';
 import {
   HeartFilled,
   ReloadOutlined,
   WarningFilled,
+  CloseCircleFilled,
 } from '@ant-design/icons';
 import { useTranslations } from 'next-intl';
 import type { Vitals } from '@/lib/data/types';
@@ -82,18 +83,25 @@ export function VitalsCard({
   if (error) {
     return (
       <Card size="small" className={`bg-surface border-border shadow-1 ${className}`}>
-        <Alert
-          message={error}
-          type="error"
-          showIcon
-          action={
-            onRetry && (
-              <Button size="small" danger onClick={onRetry} icon={<ReloadOutlined />}>
-                Retry
-              </Button>
-            )
-          }
-        />
+        <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-sev-extreme-subtle/40 border border-sev-extreme/30">
+          <div className="flex items-center gap-2.5 min-w-0 text-sev-extreme">
+            <CloseCircleFilled className="text-base shrink-0" />
+            <span className="text-xs font-semibold text-ink truncate">
+              {error}
+            </span>
+          </div>
+          {onRetry && (
+            <Button
+              size="small"
+              danger
+              onClick={onRetry}
+              icon={<ReloadOutlined />}
+              className="shrink-0 px-3 font-semibold shadow-xs"
+            >
+              Retry
+            </Button>
+          )}
+        </div>
       </Card>
     );
   }
