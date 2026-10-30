@@ -5,17 +5,18 @@ import * as THREE from 'three';
  */
 export const STAGE_COLORS = {
   bg: '#0B1310',
-  grid: '#17231E',
-  ink: '#CFD8D2',
-  route: '#00E575',
+  grid: 'rgba(255,255,255,0.06)',
+  ink: '#E8EEEA',
+  muted: '#8FA097',
+  route: '#F2B705',
   impact: '#FF4D5E',
   brand: '#006233',
   brandSubtle: '#1F332A',
 
   // Region colors from tokens.css
-  regUnlikely: '#5A6660',
-  regCheck: '#E68A00',
-  regLikely: '#D9383A',
+  regUnlikely: '#C9C4B6',
+  regCheck: '#E0A100',
+  regLikely: '#D21034',
 } as const;
 
 /**
