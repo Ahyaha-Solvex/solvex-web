@@ -3,9 +3,10 @@
     "appName": "SolveX Response",
     "brand": "SolveX",
     "simBadge": "بث الصندوق الأسود المحاكى",
+    "medicalDisclaimer": "تقدير لتحديد الأولويات، وليس تشخيصاً طبياً.",
     "direction": "RTL",
-    "loading": "جارٍ التحميل...",
-    "error": "حدث خطأ غير متوقع",
+    "loading": "جاري التحميل...",
+    "error": "حدث خطأ ما",
     "retry": "إعادة المحاولة",
     "locales": {
       "fr": "Français",
@@ -15,65 +16,75 @@
   },
   "lab": {
     "title": "مختبر المكونات",
-    "subtitle": "دليل المكونات التفاعلي ونظام التصميم",
+    "subtitle": "دليل المكونات التفاعلي ونظام التصميم الموحد",
     "directionIndicator": "RTL",
     "categories": {
       "foundations": "الأساسيات",
       "primitives": "العناصر الأولية",
       "dataDisplay": "عرض البيانات",
-      "stage": "المشهد ثلاثي الأبعاد",
+      "stage": "المسرح ثلاثي الأبعاد",
       "map": "الخرائط",
-      "landing": "صفحة العرض"
+      "landing": "الصفحة التعريفية"
     },
     "links": {
       "tokens": "رموز التصميم",
-      "data": "تدفق البيانات",
-      "body": "معايرة المجسم ثلاثي الأبعاد",
+      "data": "بث البيانات",
+      "body": "معايرة الجسم ثلاثي الأبعاد",
       "hospital": "واجهة المستشفى",
       "responder": "واجهة الحماية المدنية",
       "landing": "الصفحة التعريفية"
     },
     "data": {
-      "title": "تدفق البيانات والأحداث المباشرة",
-      "subtitle": "بث الأحداث المباشر، عارض JSON ورسائل SMS الأولية",
-      "eventStream": "تدفق الأحداث",
+      "title": "بث البيانات والأحداث",
+      "subtitle": "سجل الأحداث المباشر، فحص JSON، والرسائل القصيرة المباشرة",
+      "eventStream": "سجل الأحداث",
       "currentIncident": "الحادث النشط (JSON)",
-      "smsFeed": "تدفق رسائل SMS الأولي (160 حرفاً)",
+      "smsFeed": "بث الرسائل القصيرة الخام (160 حرف)",
       "online": "متصل (بيانات الصندوق الأسود)",
-      "offline": "غير متصل (وضع الطوارئ SMS)",
+      "offline": "غير متصل (وضع SMS المخفض)",
       "noIncident": "لا يوجد حادث نشط",
-      "clear": "مسح سجل الأحداث"
+      "clear": "مسح الأحداث"
     },
     "tokens": {
-      "title": "رموز التصميم (Design Tokens)",
-      "subtitle": "لوحة Saharan Paper الفاتحة، قياسات الخطوط، الحواف، الظلال وديناميكية الحركة",
-      "colors": "الألوان ولوحة التدرجات",
+      "title": "رموز التصميم",
+      "subtitle": "لوحة Saharan Paper، الخطوط، أنصاف الأقطار، الظلال، وحركات الانتقال",
+      "colors": "الألوان واللوحة",
       "surfaces": "الأسطح والحدود",
       "brand": "الهوية والألوان المميزة",
       "severity": "مستويات الخطورة (M3)",
       "regions": "مستويات مناطق الجسم (M4)",
-      "confidence": "مقياس الثقة",
-      "stage": "لوحة ألوان المشهد المظلم",
+      "confidence": "مقياس درجة الثقة",
+      "stage": "ألوان المسرح المظلم",
       "typography": "مقياس الخطوط",
-      "spacing": "مقياس المسافات (قاعدة 4px)",
-      "radii": "نصف قطر الانحناء",
+      "spacing": "مقياس المسافات (قاعدة 4 بكسل)",
+      "radii": "أنصاف أقطار الحواف",
       "shadows": "الظلال",
       "motion": "الحركة والانتقالات",
       "fast": "سريع (150ms)",
       "base": "أساسي (240ms)",
       "slow": "بطيء (420ms)",
-      "hero": "بطيء رئيسي (900ms)",
-      "easeOut": "تلاشي سريع",
-      "easeInOut": "انتقال سلس",
-      "triggerMotion": "تشغيل الحركة التجريبية",
-      "antVerification": "التحقق من سمة مكونات Ant Design",
-      "antButtonPrimary": "زر رئيسي",
-      "antButtonDefault": "زر افتراضي",
-      "antButtonDanger": "زر تحذير",
-      "antTagText": "وسم Antd",
+      "hero": "بطيء جداً (900ms)",
+      "easeOut": "Ease Out",
+      "easeInOut": "Ease In-Out",
+      "triggerMotion": "تشغيل الحركة",
+      "antVerification": "فحص مكونات Ant Design",
+      "antButtonPrimary": "الزر الرئيسي",
+      "antButtonDefault": "الزر القياسي",
+      "antButtonDanger": "زر التحذير",
+      "antTagText": "شارة Antd",
       "antTableColName": "الخاصية",
       "antTableColVal": "القيمة",
-      "antTableColDesc": "الاستخدام المقترح"
+      "antTableColDesc": "الاستخدام"
+    },
+    "components": {
+      "title": "مكتبة المكونات",
+      "subtitle": "دليل تفاعلي يضم كافة المكونات الـ 23 بجميع حالاتها التفاعلية",
+      "badges": "الشارات ووسوم الحالة",
+      "medical": "المجال الطبي والفرز",
+      "vitals": "القياس عن بعد والمؤشرات الحيوية",
+      "dispatch": "التوجيه وقائمة الحوادث",
+      "feed": "بث الرسائل القصيرة والتسلسل الزمني",
+      "stage": "مكونات المسرح ثلاثي الأبعاد"
     }
   },
   "landing": {
@@ -86,11 +97,27 @@
   },
   "hospital": {
     "title": "واجهة المستشفى",
-    "placeholder": "لوحة تحضير طوارئ المستشفى (CP3)"
+    "placeholder": "لوحة تحضير طوارئ المستشفى (CP3)",
+    "etaTitle": "الوقت المقدر للوصول",
+    "from": "المصدر",
+    "vitalsTitle": "المؤشرات الحيوية المباشرة",
+    "prepTitle": "بروتوكول تجهيز غرفة الطوارئ",
+    "prepared": "مكتمل"
   },
   "responder": {
     "title": "واجهة الحماية المدنية",
-    "placeholder": "منصة التوجيه والإسعاف للحماية المدنية (CP4)"
+    "placeholder": "منصة التوجيه والإسعاف للحماية المدنية (CP4)",
+    "actions": {
+      "confirm": "تأكيد الحادث",
+      "assignAmbulance": "إرسال سيارة إسعاف",
+      "callForHelp": "نداء استغاثة تضامني",
+      "close": "إنهاء التدخل"
+    },
+    "triage": "الفرز ومستوى الخطورة",
+    "timelineTitle": "التسلسل الزمني للحادث",
+    "smsFeedTitle": "بث الرسائل القصيرة اللاسلكي",
+    "helpersTitle": "المسعفون المتطوعون بالجوار",
+    "recommended": "موصى به"
   },
   "severity": {
     "low": "منخفض",

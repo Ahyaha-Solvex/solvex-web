@@ -3,6 +3,7 @@
     "appName": "SolveX Response",
     "brand": "SolveX",
     "simBadge": "Simulated blackbox stream",
+    "medicalDisclaimer": "Estimate to prioritise, not a diagnosis.",
     "direction": "LTR",
     "loading": "Loading...",
     "error": "An error occurred",
@@ -74,6 +75,16 @@
       "antTableColName": "Property",
       "antTableColVal": "Token Value",
       "antTableColDesc": "Usage"
+    },
+    "components": {
+      "title": "Component Library",
+      "subtitle": "Interactive catalog of all 23 components with all interaction states",
+      "badges": "Badges & Status Tags",
+      "medical": "Medical & Triage",
+      "vitals": "Telemetry & Live Vitals",
+      "dispatch": "Dispatch & Incident Queue",
+      "feed": "SMS Feed & Timeline",
+      "stage": "3D Stage Components"
     }
   },
   "landing": {
@@ -86,11 +97,27 @@
   },
   "hospital": {
     "title": "Hospital View",
-    "placeholder": "Emergency room preparation dashboard (CP3)"
+    "placeholder": "Emergency room preparation dashboard (CP3)",
+    "etaTitle": "Arrival Countdown",
+    "from": "Origin",
+    "vitalsTitle": "Live Patient Vitals",
+    "prepTitle": "Emergency Room Preparation",
+    "prepared": "completed"
   },
   "responder": {
     "title": "Responder View",
-    "placeholder": "Protection Civile dispatcher console (CP4)"
+    "placeholder": "Protection Civile dispatcher console (CP4)",
+    "actions": {
+      "confirm": "Confirm Crash",
+      "assignAmbulance": "Assign Ambulance",
+      "callForHelp": "Call for Solidarity",
+      "close": "Close Mission"
+    },
+    "triage": "Triage & Severity",
+    "timelineTitle": "Incident Timeline",
+    "smsFeedTitle": "SMS Radio & Fallback Feed",
+    "helpersTitle": "Nearby First Responders",
+    "recommended": "Recommended"
   },
   "severity": {
     "low": "Low",

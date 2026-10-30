@@ -3,6 +3,7 @@
     "appName": "SolveX Response",
     "brand": "SolveX",
     "simBadge": "Flux boîte noire simulé",
+    "medicalDisclaimer": "Estimation de priorité, non un diagnostic clinique.",
     "direction": "LTR",
     "loading": "Chargement...",
     "error": "Une erreur est survenue",
@@ -74,6 +75,16 @@
       "antTableColName": "Propriété",
       "antTableColVal": "Valeur",
       "antTableColDesc": "Usage prévu"
+    },
+    "components": {
+      "title": "Bibliothèque de Composants",
+      "subtitle": "Catalogue interactif des 23 composants dans tous leurs états d'interaction",
+      "badges": "Badges & Étiquettes de Statut",
+      "medical": "Médical & Triage",
+      "vitals": "Télémétrie & Signaux Vitaux",
+      "dispatch": "Régulation & File d'attente",
+      "feed": "Flux SMS & Chronologie",
+      "stage": "Composants Scène 3D"
     }
   },
   "landing": {
@@ -86,11 +97,27 @@
   },
   "hospital": {
     "title": "Vue Hôpital",
-    "placeholder": "Tableau de bord de préparation aux urgences (CP3)"
+    "placeholder": "Tableau de bord de préparation aux urgences (CP3)",
+    "etaTitle": "Temps d'arrivée estimé",
+    "from": "Provenance",
+    "vitalsTitle": "Signaux vitaux en direct",
+    "prepTitle": "Protocole d'accueil des urgences",
+    "prepared": "préparés"
   },
   "responder": {
     "title": "Vue Secours",
-    "placeholder": "Poste de commandement Protection Civile (CP4)"
+    "placeholder": "Poste de commandement Protection Civile (CP4)",
+    "actions": {
+      "confirm": "Confirmer le crash",
+      "assignAmbulance": "Dépêcher ambulance",
+      "callForHelp": "Appel à solidarité",
+      "close": "Clôturer l'intervention"
+    },
+    "triage": "Triage & Gravité M3",
+    "timelineTitle": "Chronologie de l'intervention",
+    "smsFeedTitle": "Flux radio SMS direct",
+    "helpersTitle": "Secouristes à proximité",
+    "recommended": "Recommandé"
   },
   "severity": {
     "low": "Faible",
@@ -99,11 +126,11 @@
     "extreme": "Extrême"
   },
   "regions": {
-    "unlikely": "Improbable",
-    "check": "À vérifier",
-    "likely": "Probable",
+    "unlikely": "Faible probabilité",
+    "check": "À examiner",
+    "likely": "Forte probabilité",
     "head": "Tête",
-    "face": "Visage",
+    "face": "Face",
     "spine_neck": "Rachis & Cou",
     "thorax": "Thorax",
     "abdomen": "Abdomen",
@@ -113,13 +140,13 @@
   "status": {
     "suspected": "Suspecté",
     "likely": "Probable",
-    "witness_confirmed": "Confirmé témoin",
+    "witness_confirmed": "Confirmé par témoin",
     "confirmed": "Confirmé",
     "detected": "Détecté",
     "dispatched": "Dépêché",
     "on_scene": "Sur les lieux",
     "transporting": "En transport",
-    "at_hospital": "À l'hôpital",
+    "at_hospital": "Aux urgences",
     "closed": "Clôturé"
   }
 }
