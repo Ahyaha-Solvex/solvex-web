@@ -284,7 +284,6 @@ function AnchorSphere({
 function CameraController({
   selectedRegion,
   viewMode,
-  onReset,
 }: {
   selectedRegion: BodyRegion | null;
   viewMode?: 'front' | 'back' | 'free';
@@ -320,21 +319,24 @@ function CameraController({
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   }, []);
 
-  const triggerCameraTransition = (targetPose: RegionCameraPose, duration = 600) => {
-    if (!controlsRef.current) return;
-    const currentLookAt = controlsRef.current.target.clone();
-    const currentPos = camera.position.clone();
+  const triggerCameraTransition = React.useCallback(
+    (targetPose: RegionCameraPose, duration = 600) => {
+      if (!controlsRef.current) return;
+      const currentLookAt = controlsRef.current.target.clone();
+      const currentPos = camera.position.clone();
 
-    transitionRef.current = {
-      active: true,
-      startTime: performance.now(),
-      duration: prefersReducedMotion ? 0 : duration,
-      startPos: currentPos,
-      targetPos: new THREE.Vector3(...targetPose.position),
-      startLookAt: currentLookAt,
-      targetLookAt: new THREE.Vector3(...targetPose.target),
-    };
-  };
+      transitionRef.current = {
+        active: true,
+        startTime: performance.now(),
+        duration: prefersReducedMotion ? 0 : duration,
+        startPos: currentPos,
+        targetPos: new THREE.Vector3(...targetPose.position),
+        startLookAt: currentLookAt,
+        targetLookAt: new THREE.Vector3(...targetPose.target),
+      };
+    },
+    [camera, prefersReducedMotion]
+  );
 
   // Handle selected region focus (SPEC_3D: 600ms tween)
   useEffect(() => {
@@ -343,7 +345,7 @@ function CameraController({
     } else {
       triggerCameraTransition(DEFAULT_CAMERA_FRONT, 600);
     }
-  }, [selectedRegion, prefersReducedMotion]);
+  }, [selectedRegion, triggerCameraTransition]);
 
   // Handle View Mode switch (Front / Back / Free)
   useEffect(() => {
@@ -352,7 +354,7 @@ function CameraController({
     } else if (viewMode === 'back') {
       triggerCameraTransition(DEFAULT_CAMERA_BACK, 600);
     }
-  }, [viewMode]);
+  }, [viewMode, triggerCameraTransition]);
 
   useFrame(() => {
     const now = performance.now();

@@ -2,18 +2,17 @@
 
 import React, { useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { Card, Button, Slider, InputNumber, Segmented, Tag, message, Space, Typography } from 'antd';
+import { Card, Button, Slider, InputNumber, Segmented, Tag, message, Space } from 'antd';
 import {
   CopyOutlined,
   ReloadOutlined,
   CheckOutlined,
-  EyeOutlined,
 } from '@ant-design/icons';
 import { BASE_ANCHORS, type BodyRegionAnchor } from '@/lib/three/regions';
 import type { BodyRegion } from '@/lib/data/types';
 import { StageFrame } from './StageFrame';
 
-const { Text } = Typography;
+
 
 // Dynamically import Body3D with ssr: false per Rule 11
 const Body3D = dynamic(() => import('@/components/stage/Body3D'), {
