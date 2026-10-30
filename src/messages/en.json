@@ -33,6 +33,17 @@
       "responder": "Responder View",
       "landing": "Landing Showcase"
     },
+    "data": {
+      "title": "Data Stream & Events",
+      "subtitle": "Real-time event stream, JSON inspector, and raw SMS feed",
+      "eventStream": "Event Stream",
+      "currentIncident": "Active Incident (JSON)",
+      "smsFeed": "Raw SMS Feed (160 chars)",
+      "online": "Online (Blackbox Data)",
+      "offline": "Offline (Degraded SMS)",
+      "noIncident": "No active incident",
+      "clear": "Clear Events"
+    },
     "tokens": {
       "title": "Design Tokens",
       "subtitle": "Saharan Paper light palette, typography, radii, shadows, and motion dynamics",

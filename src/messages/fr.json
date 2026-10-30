@@ -33,6 +33,17 @@
       "responder": "Vue Secours",
       "landing": "Page Vitrine"
     },
+    "data": {
+      "title": "Flux de Données & Événements",
+      "subtitle": "Flux d'événements temps réel, inspection JSON et messages SMS bruts",
+      "eventStream": "Flux d'événements",
+      "currentIncident": "Incident Actif (JSON)",
+      "smsFeed": "Flux SMS brut (160 caractères)",
+      "online": "En ligne (Blackbox Data)",
+      "offline": "Hors ligne (SMS dégradé)",
+      "noIncident": "Aucun incident actif",
+      "clear": "Effacer les événements"
+    },
     "tokens": {
       "title": "Tokens de Design",
       "subtitle": "Palette Saharan Paper, typographie, rayons, ombres et dynamique de mouvement",

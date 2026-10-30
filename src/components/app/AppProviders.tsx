@@ -12,6 +12,7 @@ import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
 import 'dayjs/locale/ar';
 import { antdTheme } from '@/lib/antdTheme';
+import { SourceProvider } from './SourceProvider';
 
 const antdLocales = {
   fr: frFR,
@@ -38,7 +39,9 @@ export function AppProviders({
           locale={antdLocales[locale] || frFR}
           direction={locale === 'ar' ? 'rtl' : 'ltr'}
         >
-          {children}
+          <SourceProvider>
+            {children}
+          </SourceProvider>
         </ConfigProvider>
       </StyleProvider>
     </AntdRegistry>
