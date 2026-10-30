@@ -19,3 +19,12 @@ body {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
+
+/* Button tactile feel per DESIGN.md */
+.ant-btn {
+  transition: all var(--dur-fast) var(--ease-out) !important;
+}
+
+.ant-btn:active:not(:disabled) {
+  transform: scale(0.985);
+}

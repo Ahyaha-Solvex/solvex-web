@@ -12,6 +12,8 @@ import {
   SafetyCertificateFilled,
   PlayCircleOutlined,
   ReloadOutlined,
+  ArrowRightOutlined,
+  CheckOutlined,
 } from '@ant-design/icons';
 
 interface ColorSwatchProps {
@@ -150,15 +152,29 @@ export function TokensShowcase() {
           <div className="space-y-6">
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted mb-3">
-                Buttons
+                Buttons (Variants &amp; States)
               </h3>
-              <Space wrap size="middle">
-                <Button type="primary">{t('antButtonPrimary')}</Button>
-                <Button>{t('antButtonDefault')}</Button>
-                <Button danger>{t('antButtonDanger')}</Button>
-                <Button disabled>Disabled Action</Button>
-                <Button type="primary" loading>Loading Action</Button>
-              </Space>
+              <div className="space-y-4">
+                <Space wrap size="middle">
+                  <Button type="primary" icon={<ArrowRightOutlined />}>
+                    {t('antButtonPrimary')}
+                  </Button>
+                  <Button>{t('antButtonDefault')}</Button>
+                  <Button danger>{t('antButtonDanger')}</Button>
+                  <Button type="dashed">Dashed Action</Button>
+                  <Button type="text">Text Action</Button>
+                  <Button type="link">Link Action</Button>
+                  <Button disabled>Disabled Action</Button>
+                  <Button type="primary" loading>Loading Action</Button>
+                </Space>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <span className="text-xs font-mono text-muted">Sizes:</span>
+                  <Button size="small" type="primary" icon={<CheckOutlined />}>Small (32px)</Button>
+                  <Button size="middle" type="primary" icon={<CheckOutlined />}>Middle (40px)</Button>
+                  <Button size="large" type="primary" icon={<CheckOutlined />}>Large (48px)</Button>
+                </div>
+              </div>
             </div>
 
             <Divider className="my-4 border-border" />

@@ -19,4 +19,13 @@ describe('Brand & Theme Configuration', () => {
     expect(antdTheme.token?.borderRadius).toBe(10);
     expect(antdTheme.token?.borderRadiusLG).toBe(14);
   });
+
+  it('configures enhanced Button component tokens', () => {
+    const btn = antdTheme.components?.Button;
+    expect(btn?.controlHeight).toBe(40);
+    expect(btn?.fontWeight).toBe(600);
+    expect(btn?.colorPrimary).toBe('#006233');
+    expect(btn?.colorPrimaryHover).toBe('#007A41');
+    expect(btn?.colorPrimaryActive).toBe('#004D28');
+  });
 });
