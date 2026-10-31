@@ -328,13 +328,18 @@ export function MiniMap({
     if (crashMarkerRef.current.sig !== crashSig) {
       crashMarkerRef.current.sig = crashSig;
       crashMarkerRef.current.el.innerHTML = `
-        <div class="relative flex items-center justify-center">
-          ${
-            confScore >= 90
-              ? `<span class="animate-ping" style="position: absolute; width: 32px; height: 32px; border-radius: 9999px; background-color: ${pinColor}; opacity: 0.45;"></span>`
-              : ''
-          }
-          <span style="position: relative; background-color: ${pinColor}; width: 16px; height: 16px; border-radius: 9999px; border: 2.5px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.45); display: block;"></span>
+        <div class="relative flex flex-col items-center select-none" style="transform: translate(-50%, -50%);">
+          <div class="px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide text-white bg-[#D21034] shadow-md border border-white mb-1 whitespace-nowrap flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
+            <span>ZONE D'IMPACT</span>
+          </div>
+          <div class="relative flex items-center justify-center">
+            <div class="absolute w-12 h-12 rounded-full bg-[#D21034] animate-ping opacity-35 pointer-events-none"></div>
+            <div class="absolute w-8 h-8 rounded-full border-2 border-[#D21034] animate-pulse opacity-60 pointer-events-none"></div>
+            <div class="w-7 h-7 rounded-full bg-[#D21034] text-white flex items-center justify-center text-xs font-bold shadow-lg border-2 border-white ring-2 ring-[#D21034]/40">
+              💥
+            </div>
+          </div>
         </div>
       `;
     }
@@ -351,7 +356,7 @@ export function MiniMap({
       const shortUnit = amb.unit.replace(/^Ambulance\s+/i, '').split(' ')[0];
       const speedBadge =
         isAssigned && amb.speedKmh && amb.speedKmh > 0
-          ? ` · ${amb.speedKmh} km/h`
+          ? ` • ${amb.speedKmh} km/h`
           : '';
       const ambSig = `${isAssigned}:${shortUnit}:${speedBadge}`;
 
@@ -371,14 +376,28 @@ export function MiniMap({
         entry.sig = ambSig;
         if (isAssigned) {
           entry.el.innerHTML = `
-            <div style="display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 9999px; background-color: var(--brand); color: #ffffff; border: 2px solid #ffffff; box-shadow: 0 3px 10px rgba(0,0,0,0.32); font-family: var(--font-mono); font-size: 11px; font-weight: 700; white-space: nowrap;">
-              <span>🚑 ${shortUnit}${speedBadge}</span>
+            <div class="relative flex flex-col items-center select-none" style="transform: translate(-50%, -50%);">
+              <div class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#006233] text-white shadow-lg border border-white/70 mb-1 whitespace-nowrap flex items-center gap-1.5 tracking-wide">
+                <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+                <span>🚑 ${shortUnit}${speedBadge}</span>
+              </div>
+              <div class="relative flex items-center justify-center">
+                <div class="absolute w-8 h-8 rounded-full bg-[#006233] animate-pulse opacity-30 pointer-events-none"></div>
+                <div class="w-8 h-8 rounded-full bg-[#006233] text-white flex items-center justify-center text-xs shadow-md border-2 border-white ring-2 ring-[#006233]/30">
+                  🚑
+                </div>
+              </div>
             </div>
           `;
         } else {
           entry.el.innerHTML = `
-            <div title="${amb.unit}" style="display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 9999px; background-color: var(--surface); border: 2px solid var(--brand); box-shadow: 0 2px 6px rgba(0,0,0,0.22); font-size: 13px; cursor: pointer;">
-              🚑
+            <div title="${amb.unit}" class="relative flex flex-col items-center select-none cursor-pointer group" style="transform: translate(-50%, -50%);">
+              <div class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-white text-[#006233] shadow border border-[#006233]/40 mb-0.5 whitespace-nowrap">
+                ${shortUnit}
+              </div>
+              <div class="w-6 h-6 rounded-full bg-white text-[#006233] flex items-center justify-center text-xs shadow border border-[#006233] group-hover:scale-110 transition-transform">
+                🚑
+              </div>
             </div>
           `;
         }

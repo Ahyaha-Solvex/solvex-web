@@ -36,7 +36,9 @@ export function BreakdownMap() {
   const setTrackingTowTruck = useBreakdownStore((s) => s.setTrackingTowTruck);
 
   const providerMarkerRef = useRef<maplibregl.Marker | null>(null);
+  const providerMarkerSigRef = useRef<string>('');
   const userMarkersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const userMarkerSigsRef = useRef<Map<string, string>>(new Map());
   const lastFitMissionRef = useRef<string | null>(null);
 
   const setTrackingRef = useRef(setTrackingTowTruck);
@@ -147,21 +149,29 @@ export function BreakdownMap() {
     const map = mapRef.current;
     if (!map) return;
 
-    if (!providerMarkerRef.current) {
-      const el = document.createElement('div');
-      el.className = 'group cursor-pointer select-none';
-      el.innerHTML = `
-        <div class="relative flex flex-col items-center">
-          <div class="px-2 py-0.5 rounded-full text-[10px] font-bold shadow-md whitespace-nowrap mb-1 bg-[#006233] text-white border border-white/60 tracking-wider">
-            🚚 ${provider.unitCode}
-          </div>
-          <div class="w-8 h-8 rounded-full bg-[#006233] text-white flex items-center justify-center shadow-lg ring-4 ring-[#006233]/25 transition-transform duration-300">
-            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+    const towSig = `${provider.unitCode}:${provider.isOnline}:${provider.status}`;
+
+    const renderTowMarker = () => `
+      <div class="relative flex flex-col items-center cursor-pointer select-none group" style="transform: translate(-50%, -50%);">
+        <div class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#006233] text-white shadow-lg border border-white/60 mb-1 whitespace-nowrap flex items-center gap-1.5 tracking-wide">
+          <span class="w-2 h-2 rounded-full ${provider.isOnline ? 'bg-emerald-300 animate-pulse' : 'bg-gray-400'}"></span>
+          <span>🚚 ${provider.unitCode}</span>
+          ${provider.status === 'busy' ? '<span class="text-[9px] bg-black/25 px-1 py-0.2 rounded font-semibold">EN MISSION</span>' : ''}
+        </div>
+        <div class="relative flex items-center justify-center">
+          <div class="w-10 h-10 rounded-full bg-[#006233] text-white flex items-center justify-center shadow-[0_4px_12px_rgba(0,98,51,0.4)] border-2 border-white ring-4 ring-[#006233]/25 transition-transform duration-200 group-hover:scale-110">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24">
               <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
             </svg>
           </div>
         </div>
-      `;
+      </div>
+    `;
+
+    if (!providerMarkerRef.current) {
+      const el = document.createElement('div');
+      el.className = 'select-none';
+      el.innerHTML = renderTowMarker();
 
       el.addEventListener('click', () => {
         map.flyTo({
@@ -176,8 +186,13 @@ export function BreakdownMap() {
         .addTo(map);
 
       providerMarkerRef.current = marker;
+      providerMarkerSigRef.current = towSig;
     } else {
       providerMarkerRef.current.setLngLat([provider.position.lng, provider.position.lat]);
+      if (providerMarkerSigRef.current !== towSig) {
+        providerMarkerSigRef.current = towSig;
+        providerMarkerRef.current.getElement().innerHTML = renderTowMarker();
+      }
     }
 
     if (isTrackingTowTruck) {
@@ -186,7 +201,7 @@ export function BreakdownMap() {
         duration: 300,
       });
     }
-  }, [provider.position.lat, provider.position.lng, provider.unitCode, isTrackingTowTruck]);
+  }, [provider.position.lat, provider.position.lng, provider.unitCode, provider.isOnline, provider.status, isTrackingTowTruck]);
 
   // Update Stranded User Markers
   useEffect(() => {
@@ -203,18 +218,56 @@ export function BreakdownMap() {
       if (!activeIds.has(id)) {
         marker.remove();
         userMarkersRef.current.delete(id);
+        userMarkerSigsRef.current.delete(id);
       }
     });
 
     requestList.forEach((req) => {
       const isSelected = req.id === selectedRequestId;
       const isAccepted = req.id === activeMissionId;
+      const sig = `${req.id}:${req.status}:${isSelected}:${isAccepted}:${req.distanceKm}`;
+
+      const renderStrandedMarker = () => `
+        <div class="relative flex flex-col items-center cursor-pointer select-none group" style="transform: translate(-50%, -50%);">
+          <!-- Status & Distance Pill -->
+          <div class="px-2.5 py-0.5 rounded-full text-[11px] font-bold shadow-md whitespace-nowrap mb-1 flex items-center gap-1.5 border border-[#D5CFBE] transition-transform duration-200 ${
+            isSelected ? 'scale-110 bg-[#14201A] text-white' : 'bg-[#FAF8F3] text-[#14201A]'
+          }">
+            <span class="w-2 h-2 rounded-full ${isAccepted ? 'bg-[#006233]' : 'bg-[#D21034] animate-ping'}"></span>
+            <span>${req.userName}</span>
+            <span class="text-[10px] text-[#5C675F] font-mono">• ${req.distanceKm} km</span>
+          </div>
+
+          <!-- Distress Radar Pulse Signal -->
+          <div class="relative flex items-center justify-center">
+            ${
+              !isAccepted
+                ? `<div class="absolute w-12 h-12 rounded-full bg-[#D21034] animate-ping opacity-30 pointer-events-none"></div>
+                   <div class="absolute w-10 h-10 rounded-full border-2 border-[#D21034] animate-pulse pointer-events-none opacity-60"></div>`
+                : `<div class="absolute w-10 h-10 rounded-full bg-[#006233] animate-pulse opacity-25 pointer-events-none"></div>`
+            }
+
+            <!-- Center Icon Badge -->
+            <div class="relative w-9 h-9 rounded-full ${
+              isAccepted
+                ? 'bg-[#006233] text-white ring-4 ring-[#006233]/25 shadow-[0_4px_12px_rgba(0,98,51,0.4)]'
+                : isSelected
+                ? 'bg-[#D21034] text-white ring-4 ring-[#D21034]/35 shadow-[0_4px_14px_rgba(210,16,52,0.5)] scale-110'
+                : 'bg-[#14201A] text-white ring-2 ring-white shadow-lg'
+            } flex items-center justify-center text-sm border-2 border-white transition-all duration-200 group-hover:scale-110">
+              ${isAccepted ? '✓' : '🚗'}
+            </div>
+          </div>
+        </div>
+      `;
 
       let marker = userMarkersRef.current.get(req.id);
 
       if (!marker) {
         const el = document.createElement('div');
-        el.className = 'cursor-pointer select-none transition-transform duration-200 hover:scale-110';
+        el.className = 'select-none transition-transform duration-200 hover:scale-105';
+        el.innerHTML = renderStrandedMarker();
+
         el.addEventListener('click', () => {
           selectRequest(req.id);
         });
@@ -224,33 +277,14 @@ export function BreakdownMap() {
           .addTo(map);
 
         userMarkersRef.current.set(req.id, marker);
+        userMarkerSigsRef.current.set(req.id, sig);
+      } else {
+        marker.setLngLat([req.position.lng, req.position.lat]);
+        if (userMarkerSigsRef.current.get(req.id) !== sig) {
+          userMarkerSigsRef.current.set(req.id, sig);
+          marker.getElement().innerHTML = renderStrandedMarker();
+        }
       }
-
-      // Update marker DOM content
-      const el = marker.getElement();
-      const badgeBg = isAccepted
-        ? 'bg-[#006233] text-white'
-        : isSelected
-        ? 'bg-[#D21034] text-white ring-4 ring-[#D21034]/30'
-        : 'bg-[#14201A] text-white';
-
-      const pulseRing = !isAccepted
-        ? '<div class="absolute -inset-1 rounded-full bg-[#D21034] animate-ping opacity-35 pointer-events-none"></div>'
-        : '';
-
-      el.innerHTML = `
-        <div class="relative flex flex-col items-center">
-          ${pulseRing}
-          <div class="px-2 py-0.5 rounded-full text-[10px] font-semibold shadow-md whitespace-nowrap mb-1 bg-[#FAF8F3] text-[#14201A] border border-[#E2DDD3]">
-            ${req.userName} • ${req.distanceKm} km
-          </div>
-          <div class="w-8 h-8 rounded-full ${badgeBg} flex items-center justify-center text-sm shadow-lg transition-transform ${
-            isSelected ? 'scale-125' : ''
-          }">
-            🚗
-          </div>
-        </div>
-      `;
     });
   }, [requests, selectedRequestId, activeMissionId, selectRequest]);
 
