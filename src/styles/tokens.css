@@ -1,6 +1,7 @@
 :root {
   /* surfaces */
   --bg: #FAF8F3;
+  --flag-red: #D21034;
   --surface: #FFFFFF;
   --surface-2: #F3F0E8;
   --border: #E6E1D5;
@@ -42,10 +43,11 @@
   --shadow-1: 0 1px 2px rgba(20,32,26,.06);
   --shadow-2: 0 4px 16px rgba(20,32,26,.08);
   /* motion */
-  --dur-fast: 150ms; --dur-base: 240ms; --dur-slow: 420ms; --dur-hero: 900ms;
+  --dur-fast: 150ms; --dur-base: 240ms; --dur-slow: 420ms; --dur-hero: 900ms; --dur-led: 5s; --dur-bob: 3.6s; --dur-carousel: 600ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   /* fonts */
+  --type-eta: min(22vw, 44vh);
   --font-sans: var(--font-geist-sans), var(--font-plex-arabic), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
@@ -72,4 +74,21 @@
   .stage {
     --fade: 48px;
   }
+}
+
+/* Hospital: clinical blue in place of the flag green */
+.theme-medical {
+  --bg: #F3F7FB;
+  --surface: #FFFFFF;
+  --surface-2: #EDF3F9;
+  --border: #DCE5EE;
+  --border-strong: #C6D4E1;
+  --ink: #0F1F2E;
+  --ink-2: #34495E;
+  --muted: #5A6D80;
+  --brand: #0B6BAF;
+  --brand-hover: #0E7DC9;
+  --brand-press: #08548A;
+  --brand-subtle: #E3EFF9;
+  --sev-low: #1F8A70;
 }

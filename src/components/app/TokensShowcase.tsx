@@ -386,7 +386,7 @@ export function TokensShowcase() {
           <div className="border-b border-border pb-4">
             <span className="text-xs font-mono text-muted block mb-1">Caption · 12px / 18px muted</span>
             <div className="text-xs text-muted">
-              Estimate to prioritise — not a clinical diagnosis.
+              Estimate to prioritise.
             </div>
           </div>
 

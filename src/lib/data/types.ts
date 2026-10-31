@@ -3,7 +3,7 @@ export type M3Level = 'low' | 'medium' | 'high' | 'extreme';
 export type M4Level = 'unlikely' | 'check' | 'likely';
 export type BodyRegion = 'head' | 'face' | 'spine_neck' | 'thorax' | 'abdomen' | 'arms' | 'legs';
 export type ConfidenceStatus = 'suspected' | 'likely' | 'witness_confirmed' | 'confirmed';
-export type Channel = 'data' | 'sms';
+export type Channel = 'data' | 'sms' | 'phone';
 export type LifecycleStatus = 'detected' | 'dispatched' | 'on_scene' | 'transporting' | 'at_hospital' | 'closed';
 
 export interface Position {
@@ -53,6 +53,8 @@ export interface Profile {
   };
 }
 
+export type TriageColor = 'green' | 'yellow' | 'red' | 'black';
+
 export interface Occupant {
   id: string;
   label: string; // e.g. "Patient A"
@@ -63,7 +65,8 @@ export interface Occupant {
     escalatedBy?: string[];
   }; // probability = ranking score, 0..1
   m4: Record<BodyRegion, { level: M4Level; probability: number }>;
-  triageColor?: 'green' | 'yellow' | 'red' | 'black';
+  triageColor?: TriageColor;
+  hospitalId?: string; // several victims can go to different hospitals
   vitals?: Vitals;
 }
 
@@ -81,7 +84,16 @@ export interface TimelineEvent {
     | 'at_hospital'
     | 'helper_called'
     | 'closed'
-    | 'user_ok';
+    | 'user_ok'
+    | 'phone_call'
+    | 'volunteer_called'
+    | 'yellow_line'
+    | 'zone_entered'
+    | 'zone_overdue'
+    | 'driver_warned'
+    | 'helper_confirmed'
+    | 'contact_called'
+    | 'triage_set';
   label: string;
 }
 
@@ -113,6 +125,9 @@ export interface NearbyPerson {
   lng: number;
   distanceM: number;
   accepted?: boolean;
+  name?: string;
+  called?: boolean;
+  confirmed?: boolean; // dispatcher confirmed the helper: first-aid cards sent
 }
 
 export interface NearbyVehicle {
@@ -165,6 +180,28 @@ export interface TelemetryWindow {
   speedKmh1Hz: number[];
 }
 
+/** A driver who left coverage: nothing comes from the car once the signal goes. */
+export interface DeadZoneWatch {
+  phase: 'driving' | 'in_zone' | 'overdue';
+  driver: string;
+  road: string;
+  backBy: string;
+  lastSeenAt?: string;
+  warned: boolean;
+  toldNoHelp: boolean;
+  acknowledged: boolean;
+}
+
+/** What the dispatcher learns from a phone call. */
+export interface PhoneReport {
+  roadLabel: string;
+  victims: number;
+  conscious: boolean;
+  breathing: boolean;
+  bleeding: boolean;
+  trapped: boolean;
+}
+
 export interface Incident {
   id: string;
   createdAt: string;
@@ -183,6 +220,9 @@ export interface Incident {
   timeline: TimelineEvent[];
   sms: SmsMessage[];
   telemetry?: TelemetryWindow;
+  phoneReport?: PhoneReport;
+  deadZone?: DeadZoneWatch;
+  yellowLineDrivers?: number; // drivers on the route told to clear the yellow line
 }
 
 export type SourceEvent =

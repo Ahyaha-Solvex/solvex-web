@@ -21,12 +21,14 @@ import {
   CheckCircleOutlined,
   ThunderboltOutlined,
 } from '@ant-design/icons';
+import { useTranslations } from 'next-intl';
 import { useIncidentSource } from './SourceProvider';
 import { useIncidentStore } from '@/lib/stores/incidentStore';
 import { useUiStore } from '@/lib/stores/uiStore';
 
 export function ScenarioPanel() {
   const source = useIncidentSource();
+  const tZone = useTranslations('responder.zone');
   const online = useIncidentStore((s) => s.online);
   const activeIncident = useIncidentStore((s) => s.getActiveIncident());
   const drawerOpen = useUiStore((s) => s.scenarioDrawerOpen);
@@ -177,6 +179,9 @@ export function ScenarioPanel() {
                   Bouton SOS (100%)
                 </Button>
               </div>
+              <Button block onClick={() => source.startDeadZone()} className="text-xs font-semibold h-10">
+                {tZone('simulate')}
+              </Button>
               <Button
                 block
                 onClick={() => source.triggerUserOk()}

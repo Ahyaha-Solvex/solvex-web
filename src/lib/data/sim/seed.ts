@@ -84,6 +84,7 @@ export const SEED_AMBULANCES: Ambulance[] = [
 export const SEED_NEARBY_PEOPLE: NearbyPerson[] = [
   {
     id: 'helper-1',
+    name: 'Dr. Amine B.',
     kind: 'helper_medic',
     lat: 36.3725,
     lng: 3.899,
@@ -92,6 +93,7 @@ export const SEED_NEARBY_PEOPLE: NearbyPerson[] = [
   },
   {
     id: 'helper-2',
+    name: 'Amel Kaci',
     kind: 'helper_first_aider',
     lat: 36.376,
     lng: 3.9035,
@@ -100,6 +102,7 @@ export const SEED_NEARBY_PEOPLE: NearbyPerson[] = [
   },
   {
     id: 'helper-3',
+    name: 'Sofiane H.',
     kind: 'volunteer',
     lat: 36.371,
     lng: 3.906,
@@ -108,6 +111,7 @@ export const SEED_NEARBY_PEOPLE: NearbyPerson[] = [
   },
   {
     id: 'helper-4',
+    name: 'Nadia R.',
     kind: 'volunteer',
     lat: 36.3775,
     lng: 3.898,
@@ -116,6 +120,7 @@ export const SEED_NEARBY_PEOPLE: NearbyPerson[] = [
   },
   {
     id: 'helper-5',
+    name: 'Yacine T.',
     kind: 'volunteer',
     lat: 36.369,
     lng: 3.902,
@@ -174,6 +179,34 @@ export const SEED_OCCUPANT_A: Occupant = {
     legs: { level: 'check', probability: 0.65 },
   },
   triageColor: 'yellow',
+};
+
+export const SEED_OCCUPANT_B: Occupant = {
+  ...SEED_OCCUPANT_A,
+  id: 'occ-b',
+  label: 'Patient B',
+  profile: {
+    ...SEED_OCCUPANT_A.profile,
+    ageYears: 34,
+    sex: 'f',
+    bloodType: 'A+',
+    onBloodThinners: false,
+    chronicDiseases: [],
+    medications: [],
+    allergies: [],
+  },
+  m3: { level: 'medium', probability: 0.18 },
+  m4: {
+    head: { level: 'unlikely', probability: 0.12 },
+    face: { level: 'unlikely', probability: 0.09 },
+    spine_neck: { level: 'check', probability: 0.41 },
+    thorax: { level: 'check', probability: 0.38 },
+    abdomen: { level: 'unlikely', probability: 0.14 },
+    arms: { level: 'likely', probability: 0.62 },
+    legs: { level: 'unlikely', probability: 0.2 },
+  },
+  triageColor: 'yellow',
+  vitals: undefined,
 };
 
 export const SEED_PREP_ITEMS: PrepItem[] = [

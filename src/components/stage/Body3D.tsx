@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Html, PerformanceMonitor } from '@react-three/drei';
+import { ContactShadows, OrbitControls, useGLTF, Html, PerformanceMonitor } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
@@ -19,8 +19,10 @@ import {
 } from '@/lib/three/regions';
 import {
   STAGE_COLORS,
+  HEAT_SLOTS,
   createBodyMaterial,
   createBodyEmptyMaterial,
+  createHeatBodyMaterial,
 } from '@/lib/three/materials';
 
 export interface Body3DProps {
@@ -31,7 +33,18 @@ export interface Body3DProps {
   onSelectAnchor?: (anchor: BodyRegionAnchor) => void;
   isCalibrating?: boolean;
   className?: string;
+  /** Called every frame with each region's position on the canvas, in pixels. */
+  onProject?: (points: RegionPoints) => void;
+  /** The mirrored limb that faces the side panel. */
+  projectSide?: 'l' | 'r';
 }
+
+export type RegionPoints = Partial<Record<BodyRegion, [number, number]>>;
+
+const SCAN_TOP = 1;
+const SCAN_BOTTOM = -1.1;
+const SCAN_SECONDS = 1.6;
+const LEVEL_GAIN: Record<M4Level, number> = { likely: 1, check: 0.72, unlikely: 0 };
 
 // Preload body model
 if (typeof window !== 'undefined') {
@@ -86,8 +99,43 @@ function FallbackMannequin({ isEmpty }: { isEmpty: boolean }) {
 /**
  * 3D Human Body Model (SPEC_3D lines 9-19)
  */
-function BodyModel({ isEmpty }: { isEmpty: boolean }) {
+function BodyModel({
+  isEmpty,
+  occupant,
+  anchors,
+}: {
+  isEmpty: boolean;
+  occupant?: Occupant | null;
+  anchors: BodyRegionAnchor[];
+}) {
   const gltf = useGLTF('/models/body.glb');
+  const heat = useMemo(() => createHeatBodyMaterial(), []);
+  const hoveredRegion = useUiStore((s) => s.hoveredRegion);
+  const selectedRegion = useUiStore((s) => s.selectedRegion);
+  const occupantId = occupant?.id;
+  const hasPatient = Boolean(occupant);
+  const scanStart = useRef(0);
+
+  // Every patient gets a fresh scan: the estimates appear as the line passes them.
+  useEffect(() => {
+    scanStart.current = performance.now();
+  }, [occupantId]);
+
+  useFrame(() => {
+    const { uniforms } = heat;
+    const now = performance.now();
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const swept = reduced ? 1 : Math.min((now - scanStart.current) / (SCAN_SECONDS * 1000), 1);
+    uniforms.uScan.value = SCAN_TOP + (SCAN_BOTTOM - SCAN_TOP) * swept;
+    uniforms.uTime.value = reduced ? 0 : now * 0.001;
+    anchors.slice(0, HEAT_SLOTS).forEach((anchor, i) => {
+      const level = occupant?.m4?.[anchor.id]?.level ?? 'unlikely';
+      const focused = hoveredRegion === anchor.id || selectedRegion === anchor.id;
+      uniforms.uHeat.value[i].set(...anchor.position, anchor.radius);
+      uniforms.uHeatColor.value[i].set(level === 'likely' ? STAGE_COLORS.regLikely : STAGE_COLORS.regCheck);
+      uniforms.uHeatGain.value[i] = focused ? Math.max(LEVEL_GAIN[level], 0.9) : LEVEL_GAIN[level];
+    });
+  });
 
   const clonedScene = useMemo(() => {
     const scene = gltf.scene.clone(true);
@@ -106,6 +154,8 @@ function BodyModel({ isEmpty }: { isEmpty: boolean }) {
 
     const overrideMaterial = isEmpty
       ? createBodyEmptyMaterial()
+      : hasPatient
+      ? heat.material
       : createBodyMaterial();
 
     scene.traverse((obj) => {
@@ -118,7 +168,7 @@ function BodyModel({ isEmpty }: { isEmpty: boolean }) {
     });
 
     return scene;
-  }, [gltf, isEmpty]);
+  }, [gltf, isEmpty, hasPatient, heat]);
 
   return <primitive object={clonedScene} />;
 }
@@ -158,7 +208,7 @@ function AnchorSphere({
   useFrame(() => {
     const t = performance.now() * 0.001;
 
-    if (sphereRef.current) {
+    if (sphereRef.current && isCalibrating) {
       if (level === 'likely') {
         // Pulse period 1.0s, opacity 0.35 <-> 0.75
         const opacity = 0.55 + 0.2 * Math.sin(t * Math.PI * 2);
@@ -195,6 +245,7 @@ function AnchorSphere({
       {/* Primary Glowing Additive Sphere */}
       <mesh
         ref={sphereRef}
+        renderOrder={10}
         onPointerOver={(e) => {
           e.stopPropagation();
           onHover(true);
@@ -212,23 +263,31 @@ function AnchorSphere({
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={level === 'unlikely' ? 0.8 : 0.5}
+          opacity={isCalibrating ? 0.5 : 0}
           depthWrite={false}
-          blending={THREE.AdditiveBlending}
+          depthTest={false}
         />
       </mesh>
 
+      {/* Solid core: readable on a light page, always in front of the body */}
+      {level !== 'unlikely' && !isCalibrating && (
+        <mesh renderOrder={11}>
+          <sphereGeometry args={[0.012, 16, 16]} />
+          <meshBasicMaterial color={color} depthWrite={false} depthTest={false} transparent />
+        </mesh>
+      )}
+
       {/* Expanding Ring for 'likely' severe injuries */}
       {level === 'likely' && !isCalibrating && (
-        <mesh ref={ringRef} rotation={[Math.PI / 2, 0, 0]}>
+        <mesh ref={ringRef} renderOrder={10}>
           <ringGeometry args={[anchor.radius * 0.95, anchor.radius * 1.15, 32]} />
           <meshBasicMaterial
             color={color}
             transparent
             opacity={0.6}
             depthWrite={false}
+            depthTest={false}
             side={THREE.DoubleSide}
-            blending={THREE.AdditiveBlending}
           />
         </mesh>
       )}
@@ -411,6 +470,33 @@ function CameraController({
   );
 }
 
+/** Reports where each region lands on screen, so the page can draw lines to it. */
+function Projector({
+  anchors,
+  side,
+  onProject,
+}: {
+  anchors: BodyRegionAnchor[];
+  side: 'l' | 'r';
+  onProject: (points: RegionPoints) => void;
+}) {
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+  const point = useMemo(() => new THREE.Vector3(), []);
+  const points = useRef<RegionPoints>({});
+
+  useFrame(() => {
+    anchors.forEach((anchor) => {
+      if (anchor.side && anchor.side !== side) return;
+      point.set(...anchor.position).project(camera);
+      points.current[anchor.id] = [((point.x + 1) / 2) * size.width, ((1 - point.y) / 2) * size.height];
+    });
+    onProject(points.current);
+  });
+
+  return null;
+}
+
 /**
  * Main Body3D WebGL Canvas Component
  */
@@ -422,12 +508,14 @@ export function Body3D({
   onSelectAnchor,
   isCalibrating = false,
   className = '',
+  onProject,
+  projectSide = 'r',
 }: Body3DProps) {
   const { hoveredRegion, selectedRegion, setHoveredRegion, setSelectedRegion } =
     useUiStore();
 
-  const [enableBloom, setEnableBloom] = useState(true);
-  const [dpr, setDpr] = useState<number>(1.5);
+  const [enableBloom, setEnableBloom] = useState(false);   // bloom needs an opaque canvas
+  const [dpr, setDpr] = useState<number>(1);
   const [isTabVisible, setIsTabVisible] = useState(true);
 
   // Pause render loops when the tab is hidden (GEMINI.md Rule 11)
@@ -455,7 +543,7 @@ export function Body3D({
           alpha: true,
           powerPreference: 'high-performance',
         }}
-        camera={{ fov: 35, position: [0, 0.1, 2.8] }}
+        camera={{ fov: 35, position: [0, 0, 3.3] }}
       >
         <PerformanceMonitor
           onDecline={() => {
@@ -463,18 +551,18 @@ export function Body3D({
             setDpr(1.0);
           }}
           onIncline={() => {
-            setEnableBloom(true);
+            setEnableBloom(false);
             setDpr(1.5);
           }}
         />
 
         {/* Stage Lighting (SPEC_3D line 7) */}
         <hemisphereLight
-          args={[new THREE.Color('#C7D6CE'), new THREE.Color('#0B1310'), 0.6]}
+          args={[new THREE.Color('#FFFFFF'), new THREE.Color('#B8B2A6'), 1.9]}
         />
         <directionalLight
           position={[-3, 4, 3]}
-          intensity={1.1}
+          intensity={1.5}
           castShadow={enableBloom}
         />
         <directionalLight
@@ -485,8 +573,11 @@ export function Body3D({
 
         {/* 3D Body Mesh with Model Loader & Fallback */}
         <Suspense fallback={<FallbackMannequin isEmpty={isEmpty} />}>
-          <BodyModel isEmpty={isEmpty} />
+          <BodyModel isEmpty={isEmpty} occupant={occupant} anchors={anchors} />
+          <ContactShadows position={[0, -0.9, 0]} opacity={0.4} scale={2.4} blur={2.2} far={1} frames={1} />
         </Suspense>
+
+        {onProject && <Projector anchors={anchors} side={projectSide} onProject={onProject} />}
 
         {/* Glowing Anchors */}
         {!isEmpty &&

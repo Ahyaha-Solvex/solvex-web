@@ -20,7 +20,7 @@ export function LandingNav() {
 
   return (
     <header
-      className={`fixed top-0 inset-x-0 h-14 z-40 transition-all duration-200 flex items-center justify-between px-6 md:px-12 ${
+      className={`fixed top-0 inset-x-0 h-16 z-40 transition-all duration-200 flex items-center justify-between px-6 md:px-12 ${
         scrolled
           ? 'bg-bg/85 backdrop-blur-md border-b border-border shadow-sm'
           : 'bg-transparent'
@@ -29,12 +29,12 @@ export function LandingNav() {
       {/* Brand Wordmark (dock target for أَحْيَاهَا scroll morph) */}
       <Link
         href="/landing"
-        className="flex items-center min-w-[70px] min-h-[32px] focus-visible:outline-none"
+        className="flex items-center min-w-[90px] min-h-[44px] focus-visible:outline-none"
         aria-label={PRODUCT_NAME}
       >
         <span
           id="nav-brand-text"
-          className="font-bold text-xl md:text-2xl font-arabic tracking-tight text-[#D21034] opacity-0 transition-opacity duration-150 inline-block leading-none"
+          className="font-bold text-3xl md:text-4xl font-arabic tracking-tight text-[#D21034] opacity-0 transition-opacity duration-150 inline-block leading-[1.3]"
         >
           {PRODUCT_NAME}
         </span>
@@ -42,10 +42,10 @@ export function LandingNav() {
 
       {/* Center Nav Links */}
       <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-ink-2">
-        <a href="#how" className="hover:text-brand transition-colors">
+        <a href="#sequence" className="hover:text-brand transition-colors">
           {t('howItWorks')}
         </a>
-        <a href="#platform" className="hover:text-brand transition-colors">
+        <a href="#crash" className="hover:text-brand transition-colors">
           {t('platform')}
         </a>
         <Link href="/responder" className="hover:text-brand transition-colors">

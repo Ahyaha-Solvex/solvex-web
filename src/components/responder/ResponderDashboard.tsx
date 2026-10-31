@@ -1,769 +1,406 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import {
-  Card,
-  Button,
-  Segmented,
-  Tag,
-  Alert,
-  Popover,
-  Slider,
-  Popconfirm,
-  Drawer,
-  notification,
-} from 'antd';
+import { Alert, Button, Drawer, Popconfirm, Popover, Segmented, Slider, Tabs, notification } from 'antd';
 import {
   CarOutlined,
-  SendOutlined,
-  SafetyCertificateOutlined,
   CloseCircleOutlined,
-  AlertOutlined,
-  MedicineBoxOutlined,
+  PhoneOutlined,
+  PlusOutlined,
+  ProfileOutlined,
+  SafetyCertificateOutlined,
+  SendOutlined,
   TeamOutlined,
-  EnvironmentOutlined,
 } from '@ant-design/icons';
-import { useTranslations, useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { useIncidentStore } from '@/lib/stores/incidentStore';
+import { useReplayStore } from '@/lib/stores/replayStore';
 import { useIncidentSource } from '@/components/app/SourceProvider';
-import type { Incident } from '@/lib/data/types';
+import type { Incident, M3Level, PhoneReport } from '@/lib/data/types';
 
 import { SimBadge } from '@/components/app/SimBadge';
-import { SeverityTag } from '@/components/app/SeverityTag';
 import { StatusTag } from '@/components/app/StatusTag';
 import { ConfidenceLadder } from '@/components/app/ConfidenceLadder';
-import { IncidentRow } from '@/components/app/IncidentRow';
 import { HospitalOptionCard } from '@/components/app/HospitalOptionCard';
 import { AmbulanceTable } from '@/components/app/AmbulanceTable';
 import { TimelineList } from '@/components/app/TimelineList';
 import { SmsFeed } from '@/components/app/SmsFeed';
 import { NearbyPeopleList } from '@/components/app/NearbyPeopleList';
-import { EmptyState } from '@/components/app/EmptyState';
 import { LangSwitcher } from '@/components/ui/LangSwitcher';
-import { StageFrame } from '@/components/stage/StageFrame';
 import { ReplayControls } from '@/components/stage/ReplayControls';
 import { TelemetryReadout } from '@/components/stage/TelemetryReadout';
-import { TelemetryTrace } from '@/components/stage/TelemetryTrace';
+import { NewCallModal } from './NewCallModal';
+import { ZoneAlert } from './ZoneAlert';
 
-// Dynamically load 3D and Map components with ssr: false (Rule 11)
-const CrashScene = dynamic(() => import('@/components/stage/CrashScene'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center text-[#8FA097] font-mono text-xs">
-      Loading 3D Crash Scene...
-    </div>
-  ),
-});
+const CrashScene = dynamic(() => import('@/components/stage/CrashScene'), { ssr: false });
+const MiniMap = dynamic(() => import('@/components/stage/MiniMap'), { ssr: false });
 
-const MiniMap = dynamic(() => import('@/components/stage/MiniMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center text-[#8FA097] font-mono text-xs">
-      Loading Map...
-    </div>
-  ),
-});
+const SEVERITY_COLOR: Record<M3Level, string> = {
+  low: 'var(--sev-low)',
+  medium: 'var(--sev-medium)',
+  high: 'var(--sev-high)',
+  extreme: 'var(--sev-extreme)',
+};
+const SEVERITY_RANK: Record<M3Level, number> = { low: 0, medium: 1, high: 2, extreme: 3 };
+const DEFAULT_RADIUS_M = 2000;
+
+function worst(incident: Incident): M3Level | null {
+  return incident.occupants.reduce<M3Level | null>(
+    (level, o) => (!level || SEVERITY_RANK[o.m3.level] > SEVERITY_RANK[level] ? o.m3.level : level),
+    null
+  );
+}
 
 export function ResponderDashboard() {
   const t = useTranslations('responder');
   const tCommon = useTranslations('common');
+  const tSeverity = useTranslations('severity');
+  const tHospital = useTranslations('hospital');
   const locale = useLocale();
   const router = useRouter();
+  const rtl = locale === 'ar';
 
-  const { incidents, activeIncidentId, ambulances, online, selectIncident } =
-    useIncidentStore();
+  const { incidents, activeIncidentId, ambulances, online, selectIncident } = useIncidentStore();
   const source = useIncidentSource();
+  const incident: Incident | null = activeIncidentId ? incidents[activeIncidentId] ?? null : null;
 
-  const activeIncident: Incident | null = activeIncidentId
-    ? incidents[activeIncidentId] ?? null
-    : null;
-
-  // View state: 3D Scene vs Map swap
   const [stageView, setStageView] = useState<'scene' | 'map'>('scene');
+  const [occupantId, setOccupantId] = useState<string | null>(null);
+  const [ambulancesOpen, setAmbulancesOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [callOpen, setCallOpen] = useState(false);
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [radiusM, setRadiusM] = useState(DEFAULT_RADIUS_M);
 
-  // Left Queue Filter
-  const [queueFilter, setQueueFilter] = useState<'all' | 'needs_action' | 'dispatched'>('all');
+  const queue = useMemo(
+    () =>
+      Object.values(incidents)
+        .filter((i) => i.lifecycle !== 'closed')
+        .sort((a, b) => b.confidence.score - a.confidence.score || b.createdAt.localeCompare(a.createdAt)),
+    [incidents]
+  );
 
-  // Dispatcher Actions UI state
-  const [ambulanceDrawerOpen, setAmbulanceDrawerOpen] = useState(false);
-  const [callHelpOpen, setCallHelpOpen] = useState(false);
-  const [broadcastRadiusM, setBroadcastRadiusM] = useState(2000);
-  const [mobileQueueOpen, setMobileQueueOpen] = useState(false);
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  useEffect(() => setOccupantId(null), [activeIncidentId]);
 
-  // Filter & sort incident queue: confidence score desc, then newest createdAt desc
-  const filteredIncidents = useMemo(() => {
-    const list = Object.values(incidents);
-    return list
-      .filter((inc) => {
-        if (queueFilter === 'needs_action') {
-          return inc.confidence.status !== 'confirmed' || inc.lifecycle === 'detected';
-        }
-        if (queueFilter === 'dispatched') {
-          return inc.lifecycle === 'dispatched' || !!inc.dispatch.ambulanceId;
-        }
-        return true;
-      })
-      .sort((a, b) => {
-        if (b.confidence.score !== a.confidence.score) {
-          return b.confidence.score - a.confidence.score;
-        }
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-  }, [incidents, queueFilter]);
+  const occupant = incident?.occupants.find((o) => o.id === occupantId) ?? incident?.occupants[0] ?? null;
+  const placement = rtl ? 'topLeft' : 'topRight';
+  const confirmed = incident?.confidence.status === 'confirmed';
+  const assigned = Boolean(incident?.dispatch.ambulanceId);
+  const hasTelemetry = Boolean(incident?.telemetry) && incident?.channel === 'data';
+  // Without telemetry there is no crash to replay: the map is the honest picture.
+  const view = hasTelemetry ? stageView : 'map';
 
-  // Nearby helpers summary counts
-  const helpersSummary = useMemo(() => {
-    if (!activeIncident || !activeIncident.nearbyPeople) {
-      return { medics: 0, firstAiders: 0, volunteers: 0 };
-    }
-    let medics = 0;
-    let firstAiders = 0;
-    let volunteers = 0;
+  // Opening an incident plays its crash once, from the drive up to the wreck at rest.
+  useEffect(() => {
+    if (!hasTelemetry || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const replay = useReplayStore.getState();
+    replay.setTime(0);
+    replay.play();
+  }, [activeIncidentId, hasTelemetry]);
 
-    for (const p of activeIncident.nearbyPeople) {
-      if (p.kind === 'helper_medic') medics++;
-      else if (p.kind === 'helper_first_aider') firstAiders++;
-      else volunteers++;
-    }
-    return { medics, firstAiders, volunteers };
-  }, [activeIncident]);
+  const alertZone = Object.values(incidents).find(
+    (i) => i.deadZone && !i.deadZone.acknowledged && i.deadZone.phase !== 'in_zone' && i.lifecycle !== 'closed'
+  );
+  const helpers = useMemo(
+    () => [...(incident?.nearbyPeople ?? [])].sort((a, b) => a.distanceM - b.distanceM).slice(0, 2),
+    [incident]
+  );
 
-  // Dispatcher Actions
-  const handleConfirmCrash = () => {
-    if (!activeIncident) return;
-    source.confirm(activeIncident.id);
-    notification.success({
-      message: t('actions.confirm'),
-      description: `${activeIncident.position.roadLabel} · Status updated to Confirmed`,
-      placement: locale === 'ar' ? 'topLeft' : 'topRight',
-    });
+  const confirmCrash = () => {
+    if (!incident) return;
+    source.confirm(incident.id);
+    notification.success({ message: t('actions.confirm'), description: incident.position.roadLabel, placement });
   };
 
-  const handleAssignAmbulance = (ambulanceId: string) => {
-    if (!activeIncident) return;
-    source.assignAmbulance(activeIncident.id, ambulanceId);
-    setAmbulanceDrawerOpen(false);
-    notification.success({
-      message: t('actions.assignAmbulance'),
-      description: `Ambulance ${ambulanceId} dispatched to incident.`,
-      placement: locale === 'ar' ? 'topLeft' : 'topRight',
-    });
+  const assignAmbulance = (ambulanceId: string) => {
+    if (!incident) return;
+    source.assignAmbulance(incident.id, ambulanceId);
+    setAmbulancesOpen(false);
+    notification.success({ message: t('actions.assignAmbulance'), description: ambulanceId, placement });
   };
 
-  const handleBroadcastHelp = () => {
-    if (!activeIncident) return;
-    source.callForHelp(activeIncident.id, broadcastRadiusM);
-    setCallHelpOpen(false);
-    notification.info({
-      message: t('actions.callForHelp'),
-      description: `Solidarity alert broadcasted within ${broadcastRadiusM}m radius.`,
-      placement: locale === 'ar' ? 'topLeft' : 'topRight',
-    });
+  const broadcast = () => {
+    if (!incident) return;
+    source.callForHelp(incident.id, radiusM);
+    setBroadcastOpen(false);
+    notification.info({ message: t('actions.callForHelp'), description: `${radiusM} m`, placement });
   };
 
-  const handleCloseMission = () => {
-    if (!activeIncident) return;
-    source.close(activeIncident.id);
-    notification.warning({
-      message: t('actions.close'),
-      description: `Mission ${activeIncident.id} closed.`,
-      placement: locale === 'ar' ? 'topLeft' : 'topRight',
-    });
+  const closeMission = () => {
+    if (!incident) return;
+    source.close(incident.id);
+    selectIncident(queue.find((i) => i.id !== incident.id)?.id ?? null);
   };
 
-  const handleRoleChange = (role: string) => {
-    if (role === 'hospital') {
-      router.push(`/${locale}/hospital`);
-    }
+  const logCall = (report: PhoneReport) => {
+    selectIncident(source.reportPhoneCall(report));
+    setCallOpen(false);
   };
 
-  const isDegraded = activeIncident?.channel === 'sms' || !activeIncident?.telemetry;
+  const broadcastPanel = (
+    <div className="w-64 space-y-3">
+      <p className="text-xs text-muted">{t('radiusSliderDesc')}</p>
+      <div className="flex justify-between font-mono text-xs">
+        <span className="text-muted">{t('radiusSliderTitle')}</span>
+        <span className="font-bold text-brand">{radiusM} m</span>
+      </div>
+      <Slider min={500} max={5000} step={250} value={radiusM} onChange={setRadiusM} />
+      <Button type="primary" block size="small" icon={<SendOutlined />} onClick={broadcast}>
+        {t('broadcastConfirm')}
+      </Button>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-surface-2 flex flex-col text-ink">
-      {/* 1. TOP BAR (56px) - Rule 6 & SPEC */}
-      <header className="h-14 bg-surface border-b border-border px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
-        {/* Brand Left */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-brand animate-pulse" />
-            <span className="font-bold text-base tracking-tight text-ink">
-              {tCommon('brand')}
-            </span>
-          </div>
-          <Tag color="red" className="m-0 font-mono text-[10px] uppercase font-bold tracking-wider">
-            Protection Civile
-          </Tag>
+    <div className="relative h-screen overflow-hidden bg-stage-bg text-ink">
+      {/* The scene is the page: everything else floats over it */}
+      <div className="absolute inset-0">
+        {/* The scene stays mounted: rebuilding its WebGL context on every swap is what flickered */}
+        <div className={view === 'scene' ? 'absolute inset-0' : 'absolute inset-0 invisible'}>
+          <CrashScene incident={incident} active={view === 'scene'} />
         </div>
+        {view === 'map' && <MiniMap incident={incident} ambulances={ambulances} isPip={false} />}
+      </div>
 
-        {/* Center: Role Switcher (Ant Segmented) */}
-        <div className="hidden sm:block">
-          <Segmented
-            value="responder"
-            onChange={(val) => handleRoleChange(val as string)}
-            options={[
-              { label: t('title'), value: 'responder' },
-              { label: 'Hôpital (ER)', value: 'hospital' },
-            ]}
-            className="bg-surface-elevated border border-border shadow-xs text-xs font-medium"
-          />
-        </div>
-
-        {/* Right: Language Select & SimBadge */}
+      <header className="absolute top-0 inset-x-0 h-14 px-4 flex items-center justify-between z-20">
+        <span className="font-bold text-base tracking-tight text-stage-ink">{tCommon('brand')}</span>
+        <Segmented
+          value="responder"
+          onChange={(role) => role === 'hospital' && router.push(`/${locale}/hospital`)}
+          options={[
+            { label: tHospital('roleResponder'), value: 'responder' },
+            { label: tHospital('roleHospital'), value: 'hospital' },
+          ]}
+        />
         <div className="flex items-center gap-3">
           <LangSwitcher />
           <SimBadge />
         </div>
       </header>
 
-      {/* 2. OFFLINE BANNER (SPEC_RESPONDER line 34) */}
       {!online && (
-        <Alert
-          type="warning"
-          banner
-          showIcon
-          message={
-            <span className="text-xs font-semibold">
-              Network off — SMS mode: Blackbox telemetry unreachable. Degrading to 160-char raw emergency feeds.
-            </span>
-          }
-          className="border-b border-border shadow-xs"
+        <div className="absolute top-14 inset-x-0 z-20">
+          <Alert type="warning" banner showIcon message={t('offlineBanner')} />
+        </div>
+      )}
+
+      {alertZone?.deadZone && (
+        <ZoneAlert
+          zone={alertZone.deadZone}
+          onWarn={(message) => source.warnDriver(alertZone.id, message)}
+          onAcknowledge={() => source.acknowledge(alertZone.id)}
         />
       )}
 
-      {/* Responsive mobile buttons (< 1280px) */}
-      <div className="xl:hidden flex items-center justify-between bg-surface border-b border-border px-4 py-2 text-xs">
-        <Button
-          size="small"
-          icon={<TeamOutlined />}
-          onClick={() => setMobileQueueOpen(true)}
-        >
-          {t('queueTitle')} ({filteredIncidents.length})
+      {/* Queue */}
+      <nav className="absolute top-16 start-4 z-10 w-[clamp(200px,17vw,250px)]" aria-label={t('queueTitle')}>
+        <Button block type="primary" icon={<PlusOutlined />} onClick={() => setCallOpen(true)}>
+          {t('call.open')}
         </Button>
-        <Button
-          size="small"
-          type="primary"
-          icon={<AlertOutlined />}
-          disabled={!activeIncident}
-          onClick={() => setMobileDetailOpen(true)}
-        >
-          Incident Details
-        </Button>
-      </div>
-
-      {/* 3. MAIN THREE-COLUMN WORKSPACE (≥1280: Left 320, Stage Flex, Right 392) */}
-      <div className="flex-1 flex flex-col xl:flex-row p-4 gap-4 max-w-[1920px] mx-auto w-full">
-        {/* =========================================================
-            LEFT RAIL (320px) — INCIDENT QUEUE
-            ========================================================= */}
-        <div className="hidden xl:flex w-[320px] shrink-0 flex-col gap-3">
-          <Card
-            size="small"
-            className="bg-surface border-border shadow-1 flex-1 flex flex-col"
-            styles={{ body: { padding: '12px', display: 'flex', flexDirection: 'column', height: '100%' } }}
-          >
-            {/* Queue Header & Filters */}
-            <div className="space-y-2 mb-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-ink uppercase tracking-wider flex items-center gap-1.5">
-                  <TeamOutlined className="text-brand" />
-                  {t('queueTitle')}
-                </span>
-                <span className="font-mono text-xs text-muted font-semibold">
-                  {filteredIncidents.length}
-                </span>
-              </div>
-
-              <Segmented
-                block
-                size="small"
-                value={queueFilter}
-                onChange={(val) => setQueueFilter(val as 'all' | 'needs_action' | 'dispatched')}
-                options={[
-                  { label: t('filterAll'), value: 'all' },
-                  { label: t('filterNeedsAction'), value: 'needs_action' },
-                  { label: t('filterDispatched'), value: 'dispatched' },
-                ]}
-                className="text-[11px]"
-              />
-            </div>
-
-            {/* Incident Rows List */}
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[calc(100vh-280px)]">
-              {filteredIncidents.length === 0 ? (
-                <EmptyState
-                  title={t('noIncidents')}
-                  description="No incidents match the active filter criteria."
-                  className="py-8"
-                />
-              ) : (
-                filteredIncidents.map((inc) => (
-                  <IncidentRow
-                    key={inc.id}
-                    incident={inc}
-                    selected={inc.id === activeIncidentId}
-                    onClick={() => selectIncident(inc.id)}
-                  />
-                ))
-              )}
-            </div>
-
-            {/* Nearby Helpers Summary per SPEC_RESPONDER line 10 */}
-            {activeIncident && (
-              <div className="mt-3 pt-3 border-t border-border">
-                <div className="text-[11px] font-bold text-ink mb-2">
-                  {t('helpersSummary')}
-                </div>
-                <div className="grid grid-cols-3 gap-1.5 text-center">
-                  <div className="p-1.5 rounded bg-surface-2 border border-border">
-                    <div className="flex items-center justify-center gap-1 text-[#FF4D5E]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FF4D5E]" />
-                      <span className="font-mono text-xs font-bold">{helpersSummary.medics}</span>
-                    </div>
-                    <span className="text-[9px] text-muted block truncate">{t('medicsCount')}</span>
-                  </div>
-                  <div className="p-1.5 rounded bg-surface-2 border border-border">
-                    <div className="flex items-center justify-center gap-1 text-amber-500">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                      <span className="font-mono text-xs font-bold">{helpersSummary.firstAiders}</span>
-                    </div>
-                    <span className="text-[9px] text-muted block truncate">{t('firstAidersCount')}</span>
-                  </div>
-                  <div className="p-1.5 rounded bg-surface-2 border border-border">
-                    <div className="flex items-center justify-center gap-1 text-emerald-600">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                      <span className="font-mono text-xs font-bold">{helpersSummary.volunteers}</span>
-                    </div>
-                    <span className="text-[9px] text-muted block truncate">{t('volunteersCount')}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* =========================================================
-            CENTER STAGE — TESLA-STYLE 3D SCENE & PIP MAP
-            ========================================================= */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-          <StageFrame
-            height="560px"
-            overlay={
-              <div className="absolute inset-0 p-3 pointer-events-none flex flex-col justify-between">
-                {/* Overlay Top Row: View Selector (Top-Start) & Replay Controls (Top-End) */}
-                <div className="flex items-center justify-between w-full pointer-events-auto">
-                  {/* Top-Start: Segmented Scene | Map Swap */}
-                  <Segmented
-                    value={stageView}
-                    onChange={(val) => setStageView(val as 'scene' | 'map')}
-                    options={[
-                      { label: t('viewScene'), value: 'scene' },
-                      { label: t('viewMap'), value: 'map' },
-                    ]}
-                    className="bg-[#0B1310]/80 backdrop-blur-md border border-white/10 text-xs font-medium text-white shadow-lg"
-                  />
-
-                  {/* Top-End: ReplayControls (Hidden in degraded SMS mode) */}
-                  {!isDegraded && stageView === 'scene' && (
-                    <ReplayControls />
-                  )}
-                </div>
-
-                {/* Overlay Bottom Row: TelemetryReadout (Bottom-Start), Trace (Center), MiniMap (Bottom-End) */}
-                <div className="flex flex-col sm:flex-row items-end justify-between gap-3 w-full pointer-events-auto">
-                  {/* Bottom-Start: Telemetry Readout */}
-                  {!isDegraded && stageView === 'scene' ? (
-                    <TelemetryReadout
-                      crash={activeIncident?.crash}
-                      telemetry={activeIncident?.telemetry}
-                    />
-                  ) : (
-                    <div />
-                  )}
-
-                  {/* Bottom-Center: Telemetry Trace Strip */}
-                  {!isDegraded && stageView === 'scene' && (
-                    <div className="hidden lg:block flex-1 max-w-sm xl:max-w-md mx-2">
-                      <TelemetryTrace telemetry={activeIncident?.telemetry} />
-                    </div>
-                  )}
-
-                  {/* Bottom-End: MiniMap PiP (Click swaps with 3D Scene) */}
-                  {stageView === 'scene' ? (
-                    <MiniMap
-                      incident={activeIncident}
-                      ambulances={ambulances}
-                      isPip={true}
-                      onToggleSwap={() => setStageView('map')}
-                    />
-                  ) : (
-                    /* Mini PiP of 3D Scene when Map is active */
-                    <div
-                      onClick={() => setStageView('scene')}
-                      className="w-[240px] h-[160px] rounded-xl overflow-hidden border border-white/20 shadow-2xl cursor-pointer hover:border-white/40 group relative"
-                      title="Click to restore 3D Scene"
-                    >
-                      <CrashScene incident={activeIncident} />
-                      <div className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/80 text-[10px] text-white border border-white/20">
-                        {t('viewScene')}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            }
-          >
-            {/* Center Stage Body: 3D Scene or Full Map */}
-            {stageView === 'scene' ? (
-              <CrashScene incident={activeIncident} />
-            ) : (
-              <MiniMap
-                incident={activeIncident}
-                ambulances={ambulances}
-                isPip={false}
-              />
-            )}
-          </StageFrame>
-
-          {/* Prompt if no active incident */}
-          {!activeIncident && (
-            <Card className="bg-surface border-border text-center py-6">
-              <p className="text-sm text-muted">{t('selectIncidentPrompt')}</p>
-            </Card>
-          )}
-        </div>
-
-        {/* =========================================================
-            RIGHT RAIL (392px) — INCIDENT DETAILS & ACTIONS
-            ========================================================= */}
-        <div className="hidden xl:flex w-[392px] shrink-0 flex-col gap-3">
-          {activeIncident ? (
-            <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-80px)] pr-1">
-              {/* Card 1: Header with Road label, time, Confidence Ladder, StatusTag */}
-              <Card size="small" className="bg-surface border-border shadow-1">
-                <div className="space-y-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <h3 className="text-base font-bold text-ink flex items-center gap-1.5">
-                        <EnvironmentOutlined className="text-brand" />
-                        {activeIncident.position.roadLabel}
-                      </h3>
-                      <div className="font-mono text-xs text-muted">
-                        {new Date(activeIncident.createdAt).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })}
-                      </div>
-                    </div>
-                    <StatusTag status={activeIncident.lifecycle} />
-                  </div>
-
-                  {/* Confidence Ladder (4 segments) */}
-                  <div className="pt-1 border-t border-border/60">
-                    <ConfidenceLadder
-                      score={activeIncident.confidence.score}
-                      status={activeIncident.confidence.status}
-                    />
-                  </div>
-                </div>
-              </Card>
-
-              {/* Card 2: 2x2 Dispatcher Actions Grid per SPEC_RESPONDER line 23 */}
-              <Card
-                size="small"
-                title={
-                  <span className="text-xs font-bold uppercase tracking-wider text-ink">
-                    Dispatcher Actions
+        <ul className="mt-2 space-y-1">
+          {queue.slice(0, 5).map((item) => {
+            const level = worst(item);
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  aria-current={item.id === activeIncidentId}
+                  onClick={() => selectIncident(item.id)}
+                  className={`w-full rounded-xl px-3 py-2 text-start focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
+                    item.id === activeIncidentId ? 'bg-surface text-ink' : 'bg-stage-bg/70 text-stage-ink backdrop-blur'
+                  }`}
+                >
+                  <span className="block truncate text-sm font-semibold">{item.position.roadLabel}</span>
+                  <span className="flex items-center gap-1.5 text-xs opacity-80">
+                    {level && <span className="w-2 h-2 rounded-full" style={{ background: SEVERITY_COLOR[level] }} />}
+                    {level ? tSeverity(level) : t(`origin.${item.deadZone ? 'zone' : 'blackbox'}`)}
+                    {item.phoneReport && ` · ${t('origin.phone')}`}
                   </span>
-                }
-                className="bg-surface border-border shadow-1"
-              >
-                <div className="grid grid-cols-2 gap-2">
-                  {/* Action 1: Confirm Crash */}
-                  <Button
-                    type="primary"
-                    icon={<SafetyCertificateOutlined />}
-                    disabled={activeIncident.confidence.status === 'confirmed'}
-                    onClick={handleConfirmCrash}
-                    className="w-full text-xs font-semibold"
-                  >
-                    {t('actions.confirm')}
-                  </Button>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
 
-                  {/* Action 2: Assign Ambulance (Opens Drawer) */}
-                  <Button
-                    icon={<CarOutlined />}
-                    onClick={() => setAmbulanceDrawerOpen(true)}
-                    className="w-full text-xs font-semibold"
-                  >
-                    {t('actions.assignAmbulance')}
-                  </Button>
-
-                  {/* Action 3: Call for Help (Solidarity Popover with Slider) */}
-                  <Popover
-                    content={
-                      <div className="w-64 space-y-3 p-1">
-                        <div className="text-xs font-bold text-ink">
-                          {t('radiusSliderTitle')}
-                        </div>
-                        <p className="text-[11px] text-muted leading-relaxed">
-                          {t('radiusSliderDesc')}
-                        </p>
-                        <div className="space-y-1">
-                          <div className="flex justify-between font-mono text-xs">
-                            <span className="text-muted">Radius</span>
-                            <span className="font-bold text-brand">{broadcastRadiusM} m</span>
-                          </div>
-                          <Slider
-                            min={500}
-                            max={5000}
-                            step={250}
-                            value={broadcastRadiusM}
-                            onChange={(val) => setBroadcastRadiusM(val)}
-                          />
-                        </div>
-                        <Button
-                          type="primary"
-                          block
-                          size="small"
-                          icon={<SendOutlined />}
-                          onClick={handleBroadcastHelp}
-                        >
-                          {t('broadcastConfirm')}
-                        </Button>
-                      </div>
-                    }
-                    title={null}
-                    trigger="click"
-                    open={callHelpOpen}
-                    onOpenChange={setCallHelpOpen}
-                  >
-                    <Button
-                      icon={<TeamOutlined />}
-                      className="w-full text-xs font-semibold"
-                    >
-                      {t('actions.callForHelp')}
-                    </Button>
-                  </Popover>
-
-                  {/* Action 4: Close Mission (Popconfirm) */}
-                  <Popconfirm
-                    title={t('closeConfirmTitle')}
-                    description={t('closeConfirmDesc')}
-                    onConfirm={handleCloseMission}
-                    okText="Close"
-                    cancelText="Cancel"
-                    okButtonProps={{ danger: true }}
-                  >
-                    <Button
-                      danger
-                      type="text"
-                      icon={<CloseCircleOutlined />}
-                      className="w-full text-xs font-semibold"
-                    >
-                      {t('actions.close')}
-                    </Button>
-                  </Popconfirm>
-                </div>
-              </Card>
-
-              {/* Card 3: Severity & Triage (M3) */}
-              <Card size="small" className="bg-surface border-border shadow-1">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-ink uppercase tracking-wider">
-                      {t('triage')}
-                    </span>
-                    <SeverityTag
-                      severity={activeIncident.occupants[0]?.m3.level ?? 'high'}
-                      size="large"
-                    />
-                  </div>
-
-                  <div className="flex items-baseline justify-between pt-1 border-t border-border/60">
-                    <span className="text-xs text-muted">{t('rankingScore')}</span>
-                    <span className="font-mono text-sm font-bold text-ink">
-                      {activeIncident.occupants[0]?.m3.probability
-                        ? `${(activeIncident.occupants[0].m3.probability * 100).toFixed(0)}%`
-                        : '85%'}
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-muted italic leading-snug">
-                    {tCommon('medicalDisclaimer')}
-                  </p>
-
-                  {/* Per-occupant triage list */}
-                  {activeIncident.occupants.length > 0 && (
-                    <div className="pt-2 border-t border-border/60 space-y-1.5">
-                      <div className="text-[11px] font-bold text-ink">
-                        {t('occupantsCount')} ({activeIncident.occupants.length})
-                      </div>
-                      <div className="space-y-1">
-                        {activeIncident.occupants.map((occ) => (
-                          <div
-                            key={occ.id}
-                            className="flex items-center justify-between text-xs p-1.5 rounded bg-surface-2"
-                          >
-                            <span className="font-medium text-ink flex items-center gap-1.5">
-                              <span
-                                className={`w-2 h-2 rounded-full ${
-                                  occ.triageColor === 'red'
-                                    ? 'bg-sev-extreme'
-                                    : occ.triageColor === 'yellow'
-                                    ? 'bg-sev-medium'
-                                    : 'bg-brand'
-                                }`}
-                              />
-                              {occ.label}
-                            </span>
-                            <span className="font-mono text-[11px] text-muted">
-                              {occ.profile.bloodType} · {occ.profile.ageYears}y
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Card>
-
-              {/* Card 4: Dispatch & Hospital Suggestion */}
-              <Card
-                size="small"
-                title={
-                  <span className="text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-1.5">
-                    <MedicineBoxOutlined className="text-brand" />
-                    {t('hospitalSuggestion')}
-                  </span>
-                }
-                className="bg-surface border-border shadow-1"
-              >
-                <div className="space-y-3">
-                  {/* Recommended Hospital Card */}
-                  {activeIncident.hospitalOptions?.[0] && (
-                    <HospitalOptionCard
-                      hospital={activeIncident.hospitalOptions[0]}
-                      recommended={true}
-                    />
-                  )}
-
-                  {/* Alternative Hospitals Table */}
-                  {activeIncident.hospitalOptions && activeIncident.hospitalOptions.length > 1 && (
-                    <div className="space-y-1 pt-1 border-t border-border/60">
-                      <div className="text-[11px] font-bold text-muted">Alternatives</div>
-                      <div className="space-y-1">
-                        {activeIncident.hospitalOptions.slice(1).map((h) => (
-                          <div
-                            key={h.id}
-                            className="flex items-center justify-between text-xs p-1.5 rounded bg-surface-2 border border-border"
-                          >
-                            <div className="space-y-0.5">
-                              <span className="font-semibold text-ink block">{h.name}</span>
-                              <span className="text-[10px] text-muted">
-                                {Math.round(h.etaSeconds / 60)} min · {h.freeBeds} {t('freeBeds')}
-                              </span>
-                            </div>
-                            <Button size="small" type="link" className="text-brand text-xs font-semibold p-0">
-                              {t('chooseHospital')}
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Card>
-
-              {/* Card 5: Incident Timeline */}
-              <TimelineList events={activeIncident.timeline} />
-
-              {/* Card 6: SMS Radio & Fallback Feed */}
-              <SmsFeed messages={activeIncident.sms} networkOnline={online} />
-
-              {/* Card 7: Nearby People List */}
-              <NearbyPeopleList
-                people={activeIncident.nearbyPeople}
-                onCallHelp={() => setCallHelpOpen(true)}
-              />
-            </div>
-          ) : (
-            <EmptyState
-              title={t('noIncidents')}
-              description="Select an incident from the left queue to view telemetry, dispatch actions, and triage."
-            />
-          )}
-        </div>
-      </div>
-
-      {/* Ambulance Fleet Drawer (SPEC_RESPONDER line 23) */}
-      <Drawer
-        title={t('ambulanceDrawerTitle')}
-        placement={locale === 'ar' ? 'left' : 'right'}
-        width={460}
-        open={ambulanceDrawerOpen}
-        onClose={() => setAmbulanceDrawerOpen(false)}
-      >
-        <div className="space-y-4">
-          <p className="text-xs text-muted leading-relaxed">
-            Select an available Protection Civile mobile unit to dispatch to{' '}
-            <strong className="text-ink">{activeIncident?.position.roadLabel}</strong>.
-          </p>
-
-          <AmbulanceTable
-            ambulances={ambulances}
-            assignedId={activeIncident?.dispatch.ambulanceId}
-            onAssign={handleAssignAmbulance}
-          />
-        </div>
-      </Drawer>
-
-      {/* Mobile Drawers (< 1280px) */}
-      <Drawer
-        title={t('queueTitle')}
-        placement={locale === 'ar' ? 'right' : 'left'}
-        width={320}
-        open={mobileQueueOpen}
-        onClose={() => setMobileQueueOpen(false)}
-      >
-        <div className="space-y-2">
-          {filteredIncidents.map((inc) => (
-            <IncidentRow
-              key={inc.id}
-              incident={inc}
-              selected={inc.id === activeIncidentId}
-              onClick={() => {
-                selectIncident(inc.id);
-                setMobileQueueOpen(false);
-              }}
-            />
-          ))}
-        </div>
-      </Drawer>
-
-      <Drawer
-        title="Incident Detail"
-        placement={locale === 'ar' ? 'left' : 'right'}
-        width={380}
-        open={mobileDetailOpen}
-        onClose={() => setMobileDetailOpen(false)}
-      >
-        {activeIncident && (
-          <div className="space-y-3">
-            <ConfidenceLadder
-              score={activeIncident.confidence.score}
-              status={activeIncident.confidence.status}
-            />
-            <TimelineList events={activeIncident.timeline} />
-            <SmsFeed messages={activeIncident.sms} networkOnline={online} />
+      {/* The decision */}
+      {incident && (
+        <aside className="absolute top-16 end-4 z-10 w-[clamp(280px,25vw,360px)] rounded-2xl bg-surface p-4 shadow-2">
+          <div className="flex items-start justify-between gap-2">
+            <h1 className="text-lg font-bold tracking-tight leading-tight">{incident.position.roadLabel}</h1>
+            <StatusTag status={incident.lifecycle} />
           </div>
+
+          {occupant && (
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-4xl font-bold tracking-tight" style={{ color: SEVERITY_COLOR[occupant.m3.level] }}>
+                {tSeverity(occupant.m3.level)}
+              </span>
+              <span className="font-mono text-xs text-muted">
+                {incident.phoneReport ? t('phoneTriage') : `${t('rankingScore')} ${Math.round(occupant.m3.probability * 100)}%`}
+              </span>
+            </div>
+          )}
+
+          {incident.occupants.length > 1 && (
+            <div className="mt-2 flex flex-wrap gap-1" role="tablist" aria-label={t('occupantsCount')}>
+              {incident.occupants.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={o.id === occupant?.id}
+                  onClick={() => setOccupantId(o.id)}
+                  className={`h-7 px-2.5 rounded-full text-xs font-semibold flex items-center gap-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand ${
+                    o.id === occupant?.id ? 'bg-ink text-white' : 'bg-surface-2 text-ink-2'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ background: SEVERITY_COLOR[o.m3.level] }} />
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-3">
+            <ConfidenceLadder score={incident.confidence.score} status={incident.confidence.status} />
+          </div>
+
+          {/* One obvious next step, the rest stays quiet */}
+          <div className="mt-3 space-y-2">
+            {!confirmed ? (
+              <Button block size="large" type="primary" icon={<SafetyCertificateOutlined />} onClick={confirmCrash}>
+                {t('actions.confirm')}
+              </Button>
+            ) : (
+              <Button
+                block
+                size="large"
+                type={assigned ? 'default' : 'primary'}
+                icon={<CarOutlined />}
+                onClick={() => setAmbulancesOpen(true)}
+              >
+                {assigned ? incident.dispatch.ambulanceId : t('actions.assignAmbulance')}
+              </Button>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <Popover content={broadcastPanel} trigger="click" open={broadcastOpen} onOpenChange={setBroadcastOpen}>
+                <Button block icon={<TeamOutlined />}>
+                  {t('actions.callForHelp')}
+                </Button>
+              </Popover>
+              <Popconfirm
+                title={t('closeConfirmTitle')}
+                description={t('closeConfirmDesc')}
+                onConfirm={closeMission}
+                okButtonProps={{ danger: true }}
+              >
+                <Button block danger icon={<CloseCircleOutlined />}>
+                  {t('actions.close')}
+                </Button>
+              </Popconfirm>
+            </div>
+          </div>
+
+          {incident.yellowLineDrivers !== undefined && (
+            <p className="mt-3 rounded-lg bg-sev-medium px-3 py-1.5 text-xs font-semibold text-ink">
+              {t('yellowLine', { count: incident.yellowLineDrivers })}
+            </p>
+          )}
+
+          {helpers.length > 0 && (
+            <ul className="mt-3 divide-y divide-border border-y border-border">
+              {helpers.map((person) => (
+                <li key={person.id} className="flex items-center justify-between gap-2 py-1.5 text-sm">
+                  <span className="min-w-0 truncate">
+                    <span className="font-medium">{person.name ?? t(`kind.${person.kind}`)}</span>{' '}
+                    <span className="font-mono text-xs text-muted">{person.distanceM} m</span>
+                  </span>
+                  <Button
+                    size="small"
+                    icon={<PhoneOutlined />}
+                    disabled={person.called || person.accepted}
+                    onClick={() => source.callVolunteer(incident.id, person.id)}
+                  >
+                    {t(person.accepted ? 'volunteerOnWay' : person.called ? 'volunteerCalling' : 'callVolunteer')}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <Button block type="text" className="mt-2" icon={<ProfileOutlined />} onClick={() => setDetailsOpen(true)}>
+            {t('details')}
+          </Button>
+        </aside>
+      )}
+
+      {/* Replay, telemetry and map */}
+      <div className="absolute bottom-4 inset-x-4 z-10 flex items-end justify-between gap-3 pointer-events-none">
+        <div className="pointer-events-auto flex flex-col gap-2 items-start">
+          {view === 'scene' && (
+            <>
+              <TelemetryReadout crash={incident?.crash} telemetry={incident?.telemetry} />
+              <ReplayControls />
+            </>
+          )}
+        </div>
+        <div className="pointer-events-auto pe-14">
+          {view === 'scene' ? (
+            <MiniMap incident={incident} ambulances={ambulances} isPip onToggleSwap={() => setStageView('map')} />
+          ) : (
+            hasTelemetry && <Button onClick={() => setStageView('scene')}>{t('viewScene')}</Button>
+          )}
+        </div>
+      </div>
+
+      <Drawer
+        open={ambulancesOpen}
+        onClose={() => setAmbulancesOpen(false)}
+        title={t('ambulanceDrawerTitle')}
+        placement={rtl ? 'left' : 'right'}
+        width={520}
+      >
+        <AmbulanceTable ambulances={ambulances} assignedId={incident?.dispatch.ambulanceId} onAssign={assignAmbulance} />
+      </Drawer>
+
+      <Drawer
+        open={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        title={incident?.position.roadLabel}
+        placement={rtl ? 'left' : 'right'}
+        width={480}
+      >
+        {incident && (
+          <Tabs
+            items={[
+              { key: 'timeline', label: t('timelineTitle'), children: <TimelineList events={incident.timeline} /> },
+              { key: 'sms', label: t('smsFeedTitle'), children: <SmsFeed messages={incident.sms} networkOnline={online} /> },
+              {
+                key: 'helpers',
+                label: t('helpersTitle'),
+                children: <NearbyPeopleList people={incident.nearbyPeople} onCallHelp={() => setBroadcastOpen(true)} />,
+              },
+              {
+                key: 'hospitals',
+                label: t('hospitalSuggestion'),
+                children: (
+                  <div className="space-y-2">
+                    {incident.hospitalOptions.map((hospital, i) => (
+                      <HospitalOptionCard key={hospital.id} hospital={hospital} recommended={i === 0} />
+                    ))}
+                  </div>
+                ),
+              },
+            ]}
+          />
         )}
       </Drawer>
+
+      <NewCallModal open={callOpen} onClose={() => setCallOpen(false)} onSubmit={logCall} />
     </div>
   );
 }

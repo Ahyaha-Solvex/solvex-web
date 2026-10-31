@@ -124,10 +124,10 @@ export const REGION_CAMERA_POSES: Record<BodyRegion, RegionCameraPose> = {
  */
 export const DEFAULT_CAMERA_FRONT: RegionCameraPose = {
   target: [0, 0, 0],
-  position: [0, 0.1, 2.8],
+  position: [0, 0, 3.3],
 };
 
 export const DEFAULT_CAMERA_BACK: RegionCameraPose = {
   target: [0, 0, 0],
-  position: [0, 0.1, -2.8],
+  position: [0, 0, -3.3],
 };

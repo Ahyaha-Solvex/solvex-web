@@ -1,30 +1,39 @@
 export interface CarouselComponent {
-  id: 'accelerometer' | 'gyroscope' | 'gps' | 'esp32' | 'gsm' | 'lora' | 'antenna';
-  index: number;
+  id: 'accelerometer' | 'gyroscope' | 'gps' | 'esp32' | 'gsm' | 'lora';
 }
 
 export const CAROUSEL_COMPONENTS: CarouselComponent[] = [
-  { id: 'accelerometer', index: 0 },
-  { id: 'gyroscope', index: 1 },
-  { id: 'gps', index: 2 },
-  { id: 'esp32', index: 3 },
-  { id: 'gsm', index: 4 },
-  { id: 'lora', index: 5 },
-  { id: 'antenna', index: 6 },
+  { id: 'accelerometer' },
+  { id: 'gyroscope' },
+  { id: 'gps' },
+  { id: 'esp32' },
+  { id: 'gsm' },
+  { id: 'lora' },
 ];
 
 export const INITIAL_CENTER_INDEX = 3; // ESP32
 
 export interface FocusStyle {
+  x: number;       // offset from centre, as a share of the frame width
   scale: number;
   opacity: number;
-  blur: number; // in pixels
+  blur: number;    // in pixels
+}
+
+const SLOTS: FocusStyle[] = [
+  { x: 0, scale: 1, opacity: 1, blur: 0 },
+  { x: 0.32, scale: 0.36, opacity: 0.72, blur: 1 },
+  { x: 0.47, scale: 0.27, opacity: 0.3, blur: 4 },
+  { x: 0.6, scale: 0.2, opacity: 0, blur: 8 },
+];
+
+/** Shortest signed distance from the active item on the endless ring. */
+export function ringDistance(index: number, active: number, count: number): number {
+  const d = ((index - active) % count + count) % count;
+  return d > count / 2 ? d - count : d;
 }
 
 export function getFocusStyle(distance: number): FocusStyle {
-  const d = Math.abs(distance);
-  if (d === 0) return { scale: 1.5, opacity: 1, blur: 0 };
-  if (d === 1) return { scale: 0.95, opacity: 0.55, blur: 2 };
-  if (d === 2) return { scale: 0.8, opacity: 0.28, blur: 5 };
-  return { scale: 0.7, opacity: 0.12, blur: 8 };
+  const slot = SLOTS[Math.min(Math.abs(distance), SLOTS.length - 1)];
+  return { ...slot, x: slot.x * Math.sign(distance) };
 }

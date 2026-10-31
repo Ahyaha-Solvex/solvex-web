@@ -1,5 +1,6 @@
 import { setRequestLocale } from 'next-intl/server';
-import { HospitalDashboard } from '@/components/hospital/HospitalDashboard';
+import { HospitalApp } from '@/components/hospital/HospitalApp';
+import { MedicalTheme } from '@/components/hospital/MedicalTheme';
 
 export default async function HospitalPage({
   params,
@@ -9,5 +10,9 @@ export default async function HospitalPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <HospitalDashboard />;
+  return (
+    <MedicalTheme>
+      <HospitalApp />
+    </MedicalTheme>
+  );
 }

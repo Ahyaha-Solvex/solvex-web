@@ -1,44 +1,61 @@
 {
-  "desktop": {
-    "count": 338,
-    "fps": 10,
-    "width": 1600,
-    "clips": [
-      {
-        "id": "c1",
-        "duration": 9.96,
-        "startFrame": 1,
-        "endFrame": 99
-      },
-      {
-        "id": "c2",
-        "duration": 9.96,
-        "startFrame": 100,
-        "endFrame": 199
-      },
-      {
-        "id": "c3",
-        "duration": 9.96,
-        "startFrame": 200,
-        "endFrame": 298
-      },
-      {
-        "id": "c4",
-        "duration": 3.08,
-        "startFrame": 299,
-        "endFrame": 329
-      },
-      {
-        "id": "k5_hold",
-        "duration": 0.8,
-        "startFrame": 331,
-        "endFrame": 338
-      }
-    ]
-  },
-  "mobile": {
-    "count": 173,
-    "fps": 5,
-    "width": 800
+  "count": 200,
+  "width": 1440,
+  "aspect": 1.7777777777777777,
+  "story": [
+    {
+      "key": "built",
+      "frame": 0
+    },
+    {
+      "key": "silent",
+      "frame": 40
+    },
+    {
+      "key": "knows",
+      "frame": 93
+    },
+    {
+      "key": "parts",
+      "frame": 135
+    }
+  ],
+  "carousel": {
+    "accelerometer": {
+      "cx": 0.4995,
+      "cy": 0.3601,
+      "w": 0.3844,
+      "h": 0.5597
+    },
+    "gyroscope": {
+      "cx": 0.499,
+      "cy": 0.389,
+      "w": 0.3792,
+      "h": 0.5989
+    },
+    "gps": {
+      "cx": 0.499,
+      "cy": 0.3918,
+      "w": 0.3812,
+      "h": 0.597
+    },
+    "esp32": {
+      "cx": 0.4984,
+      "cy": 0.3825,
+      "w": 0.3615,
+      "h": 0.5112
+    },
+    "gsm": {
+      "cx": 0.4984,
+      "cy": 0.3862,
+      "w": 0.3865,
+      "h": 0.5896
+    },
+    "lora": {
+      "cx": 0.4995,
+      "cy": 0.3834,
+      "w": 0.351,
+      "h": 0.472
+    }
   }
 }

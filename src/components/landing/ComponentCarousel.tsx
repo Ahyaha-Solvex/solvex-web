@@ -1,178 +1,198 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useTranslations, useLocale } from 'next-intl';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useTranslations } from 'next-intl';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import sequenceData from '@/lib/sequence.json';
+import type { FrameRect } from './ScrollSequence';
 import {
   CAROUSEL_COMPONENTS,
   INITIAL_CENTER_INDEX,
   getFocusStyle,
+  ringDistance,
 } from './carousel.layout';
 
+const ComponentViewer = dynamic(() => import('./ComponentViewer').then((m) => m.ComponentViewer), {
+  ssr: false,
+});
+
+const SETTLE_MS = 650;      // the slide must end before the live model takes over
+const MIN_LOADER_MS = 500;    // long enough to read, even on a cached model
+const VIEWER_SCALE = 1.5;   // the live model needs room to rotate past the still's bounds
+const TEXT_TOP = 0.8;       // text starts below the row, as a share of the frame height
+
 export interface ComponentCarouselProps {
-  className?: string;
-  onSelectComponent?: (index: number) => void;
-  activeIndex?: number;
+  rect: FrameRect;
+  visible: boolean;
 }
 
-export function ComponentCarousel({
-  className = '',
-  onSelectComponent,
-  activeIndex: controlledIndex,
-}: ComponentCarouselProps) {
+export function ComponentCarousel({ rect, visible }: ComponentCarouselProps) {
   const t = useTranslations('landing.carousel');
-  const locale = useLocale();
-  const isRTL = locale === 'ar';
+  const [active, setActive] = useState(INITIAL_CENTER_INDEX);
+  const [live, setLive] = useState(false);       // the viewer is mounted for the centre item
+  const [ready, setReady] = useState(false);     // the model is on screen, so the still can hide
+  const [failed, setFailed] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
+  const [held, setHeld] = useState(false);
+  const readyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const previous = useRef<number[]>(CAROUSEL_COMPONENTS.map((_, i) => ringDistance(i, INITIAL_CENTER_INDEX, CAROUSEL_COMPONENTS.length)));
 
-  const [internalIndex, setInternalIndex] = useState(INITIAL_CENTER_INDEX);
-  const activeIndex = controlledIndex !== undefined ? controlledIndex : internalIndex;
+  const count = CAROUSEL_COMPONENTS.length;
+  const step = useCallback((by: number) => setActive((a) => (a + by + count) % count), [count]);
 
-  const setActiveIndex = useCallback(
-    (idx: number) => {
-      const clamped = Math.max(0, Math.min(idx, CAROUSEL_COMPONENTS.length - 1));
-      setInternalIndex(clamped);
-      if (onSelectComponent) onSelectComponent(clamped);
-    },
-    [onSelectComponent]
-  );
-
-  const handlePrev = useCallback(() => {
-    setActiveIndex(activeIndex - 1);
-  }, [activeIndex, setActiveIndex]);
-
-  const handleNext = useCallback(() => {
-    setActiveIndex(activeIndex + 1);
-  }, [activeIndex, setActiveIndex]);
-
-  // Keyboard navigation
+  // The model is dropped first, then the next one loads once its slide has ended.
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        if (isRTL) handleNext();
-        else handlePrev();
-      } else if (e.key === 'ArrowRight') {
-        if (isRTL) handlePrev();
-        else handleNext();
-      }
+    setLive(false);
+    setReady(false);
+    setFailed(false);
+    setShowLoader(false);
+    if (!visible) return;
+    const mount = setTimeout(() => setLive(true), SETTLE_MS);
+    const loader = setTimeout(() => setShowLoader(true), SETTLE_MS);
+    return () => {
+      clearTimeout(mount);
+      clearTimeout(loader);
+      clearTimeout(readyTimer.current);
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handlePrev, handleNext, isRTL]);
+  }, [active, visible]);
 
-  const activeComp = CAROUSEL_COMPONENTS[activeIndex];
+  const handleReady = useCallback(() => {
+    clearTimeout(readyTimer.current);
+    readyTimer.current = setTimeout(() => setReady(true), MIN_LOADER_MS);
+  }, []);
+  const handleError = useCallback(() => setFailed(true), []);
+
+  useEffect(() => {
+    if (!visible) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') step(-1);
+      if (e.key === 'ArrowRight') step(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [step, visible]);
+
+  const current = CAROUSEL_COMPONENTS[active];
+  const stage = rect.x * 2 + rect.w;
+  const pos = rect.y + rect.h * sequenceData.carousel.esp32.cy;
 
   return (
-    <div className={`relative w-full flex flex-col items-center justify-between select-none ${className}`}>
-      {/* 7 Modules Stage Row */}
-      <div className="relative w-full h-72 md:h-80 flex items-center justify-center overflow-visible">
-        {CAROUSEL_COMPONENTS.map((comp, idx) => {
-          const distance = idx - activeIndex;
-          const style = getFocusStyle(distance);
-          const isFocused = distance === 0;
+    <div
+      className={`absolute inset-0 select-none transition-opacity duration-300 ${
+        visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
+      }`}
+      aria-hidden={!visible}
+    >
+      {CAROUSEL_COMPONENTS.map((comp, i) => {
+        const distance = ringDistance(i, active, count);
+        const wrapped = Math.abs(distance - previous.current[i]) > 1;
+        previous.current[i] = distance;
+        const focus = getFocusStyle(distance);
+        const meta = sequenceData.carousel[comp.id];
+        const width = rect.w * meta.w;
+        const height = rect.h * meta.h;
+        const centered = distance === 0;
+        const viewerSize = Math.max(width, height) * VIEWER_SCALE;
 
-          // Compute horizontal offset
-          // Desktop pitch ~ 14.5vw, Mobile pitch ~ 50vw
-          const offsetStyle: React.CSSProperties = {
-            transform: `translateX(calc(${distance} * var(--pitch, 14.5vw))) scale(${style.scale})`,
-            opacity: style.opacity,
-            filter: style.blur > 0 ? `blur(${style.blur}px)` : 'none',
-            zIndex: 10 - Math.abs(distance),
-            transition: 'all 600ms cubic-bezier(0.16, 1, 0.3, 1)',
-          };
+        return (
+          <div
+            key={comp.id}
+            className="absolute"
+            style={{
+              left: '50%',
+              top: pos,
+              width,
+              height,
+              zIndex: 10 - Math.abs(distance),
+              opacity: focus.opacity,
+              filter: focus.blur ? `blur(${focus.blur}px)` : 'none',
+              transform: `translate(calc(-50% + ${focus.x * rect.w}px), -50%) scale(${focus.scale})`,
+              // An item crossing the ring's seam must not slide across the stage.
+              transition: wrapped
+                ? 'opacity var(--dur-carousel) var(--ease-in-out)'
+                : 'transform var(--dur-carousel) var(--ease-in-out), opacity var(--dur-carousel) var(--ease-in-out), filter var(--dur-carousel) var(--ease-in-out)',
+            }}
+          >
+            <div className={`absolute inset-0 ${centered ? 'carousel-bob' : ''}`} data-held={held}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`/components/${comp.id}.webp`}
+                alt={t(`${comp.id}.title`)}
+                draggable={false}
+                className="w-full h-full object-contain transition-opacity duration-200"
+                style={{ opacity: centered && ready ? 0 : 1 }}
+                onClick={() => !centered && setActive(i)}
+              />
 
-          return (
-            <div
-              key={comp.id}
-              onClick={() => setActiveIndex(idx)}
-              style={offsetStyle}
-              className={`absolute top-1/2 -translate-y-1/2 w-32 h-32 md:w-52 md:h-52 cursor-pointer flex items-center justify-center rounded-2xl p-2 transition-shadow ${
-                isFocused ? 'drop-shadow-lg' : 'hover:opacity-80'
-              }`}
-              role="button"
-              tabIndex={0}
-              aria-label={t(`${comp.id}.title`)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  setActiveIndex(idx);
-                }
-              }}
-            >
-              {isFocused ? (
-                <video
-                  src={`/components/${comp.id}.mp4`}
-                  poster={`/components/${comp.id}.webp`}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-contain mix-blend-multiply pointer-events-none"
-                />
-              ) : (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={`/components/${comp.id}.webp`}
-                  alt={t(`${comp.id}.title`)}
-                  className="w-full h-full object-contain mix-blend-multiply pointer-events-none"
-                />
+              {centered && visible && live && !failed && (
+                <div
+                  className="absolute transition-opacity duration-200"
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    width: viewerSize,
+                    height: viewerSize,
+                    translate: '-50% -50%',
+                    opacity: ready ? 1 : 0,
+                  }}
+                >
+                  <ComponentViewer
+                    key={comp.id}
+                    id={comp.id}
+                    label={t('rotate')}
+                    onReady={handleReady}
+                    onError={handleError}
+                    onHold={setHeld}
+                  />
+                </div>
+              )}
+
+              {centered && showLoader && !ready && !failed && (
+                <div
+                  role="status"
+                  aria-label={t('loading')}
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-10 px-4 rounded-full bg-surface border border-border shadow-1 flex items-center gap-2 text-sm font-medium text-ink whitespace-nowrap"
+                >
+                  <span className="w-4 h-4 rounded-full border-2 border-border-strong border-t-brand animate-spin" />
+                  {t('loading')}
+                </div>
               )}
             </div>
-          );
-        })}
-
-        {/* Navigation Chevrons */}
-        <div className="absolute inset-x-4 md:inset-x-12 top-1/2 -translate-y-1/2 flex items-center justify-between pointer-events-none z-20">
-          <button
-            type="button"
-            onClick={isRTL ? handleNext : handlePrev}
-            disabled={isRTL ? activeIndex === CAROUSEL_COMPONENTS.length - 1 : activeIndex === 0}
-            className="w-12 h-12 rounded-full bg-surface border border-border shadow-1 text-ink flex items-center justify-center hover:border-border-strong disabled:opacity-20 disabled:cursor-not-allowed pointer-events-auto transition-all focus-visible:outline-none"
-            aria-label="Previous component"
-          >
-            <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
-          </button>
-
-          <button
-            type="button"
-            onClick={isRTL ? handlePrev : handleNext}
-            disabled={isRTL ? activeIndex === 0 : activeIndex === CAROUSEL_COMPONENTS.length - 1}
-            className="w-12 h-12 rounded-full bg-surface border border-border shadow-1 text-ink flex items-center justify-center hover:border-border-strong disabled:opacity-20 disabled:cursor-not-allowed pointer-events-auto transition-all focus-visible:outline-none"
-            aria-label="Next component"
-          >
-            <ChevronRight className="w-5 h-5 rtl:rotate-180" />
-          </button>
-        </div>
-      </div>
-
-      {/* Component Description Card & Dots */}
-      <div className="w-full max-w-xl text-center px-4 mt-12 md:mt-16 z-10">
-        <h3 className="text-2xl md:text-4xl font-bold tracking-tight text-ink transition-all">
-          {t(`${activeComp.id}.title`)}
-        </h3>
-        <p className="text-base md:text-lg text-muted mt-2 leading-relaxed max-w-md mx-auto min-h-[3rem] transition-all">
-          {t(`${activeComp.id}.desc`)}
-        </p>
-
-        {/* Counter and 7 Dots */}
-        <div className="flex items-center justify-center gap-4 mt-6">
-          <span className="text-xs font-mono font-semibold text-muted tracking-widest">
-            {activeIndex + 1} / {CAROUSEL_COMPONENTS.length}
-          </span>
-          <div className="flex items-center gap-1.5">
-            {CAROUSEL_COMPONENTS.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setActiveIndex(i)}
-                className={`h-2 rounded-full transition-all ${
-                  i === activeIndex
-                    ? 'w-6 bg-brand'
-                    : 'w-2 bg-border-strong hover:bg-muted'
-                }`}
-                aria-label={`Go to component ${i + 1}`}
-              />
-            ))}
           </div>
-        </div>
+        );
+      })}
+
+      {/* Fog at both ends of the row */}
+      <div className="absolute inset-y-0 left-0 w-[16%] z-20 pointer-events-none bg-gradient-to-r from-bg to-transparent" />
+      <div className="absolute inset-y-0 right-0 w-[16%] z-20 pointer-events-none bg-gradient-to-l from-bg to-transparent" />
+
+      {[
+        { by: -1, Icon: ChevronLeft, label: t('prev'), side: 'left-4 md:left-12' },
+        { by: 1, Icon: ChevronRight, label: t('next'), side: 'right-4 md:right-12' },
+      ].map(({ by, Icon, label, side }) => (
+        <button
+          key={by}
+          type="button"
+          onClick={() => step(by)}
+          aria-label={label}
+          tabIndex={visible ? 0 : -1}
+          className={`absolute ${side} z-30 w-12 h-12 -translate-y-1/2 rounded-full bg-surface border border-border shadow-1 text-ink flex items-center justify-center hover:border-border-strong transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand`}
+          style={{ top: pos }}
+        >
+          <Icon className="w-5 h-5" />
+        </button>
+      ))}
+
+      <div
+        key={current.id}
+        className="carousel-text absolute inset-x-0 mx-auto px-6 text-center max-w-2xl z-30"
+        style={{ top: rect.y + rect.h * TEXT_TOP, maxWidth: Math.min(640, stage) }}
+      >
+        <h3 className="font-semibold tracking-tight text-ink" style={{ fontSize: 'clamp(2rem, 4vw, 3.25rem)' }}>
+          {t(`${current.id}.title`)}
+        </h3>
+        <p className="text-lg md:text-xl text-muted mt-3 leading-relaxed">{t(`${current.id}.desc`)}</p>
       </div>
     </div>
   );

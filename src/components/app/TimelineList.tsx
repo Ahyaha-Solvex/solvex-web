@@ -69,7 +69,12 @@ export function TimelineList({
       case 'at_hospital':
         return <EnvironmentFilled className="text-brand" />;
       case 'helper_called':
+      case 'volunteer_called':
+      case 'contact_called':
         return <PhoneOutlined className="text-brand" />;
+      case 'helper_confirmed':
+      case 'triage_set':
+        return <CheckCircleOutlined className="text-brand" />;
       default:
         return <ClockCircleOutlined className="text-muted" />;
     }

@@ -3,7 +3,7 @@
     "appName": "أَحْيَاهَا",
     "brand": "أَحْيَاهَا",
     "simBadge": "Flux boîte noire simulé",
-    "medicalDisclaimer": "Estimation de priorité, non un diagnostic clinique.",
+    "medicalDisclaimer": "Estimation de priorité : où regarder en premier.",
     "direction": "LTR",
     "loading": "Chargement...",
     "error": "Une erreur est survenue",
@@ -105,16 +105,13 @@
       "openDemo": "Ouvrir la démo"
     },
     "sequence": {
-      "title": "Intégré dans le véhicule.",
-      "lead": "Sept modules. Une seule décision.",
-      "scrollHint": "Faites défiler pour explorer",
-      "simulatorTitle": "Simulateur de séquence boîte noire",
-      "frame": "Image",
-      "clip": "Séquence",
-      "play": "Lire",
-      "pause": "Pause",
-      "speed": "Vitesse",
-      "jumpTo": "Aller à l'étape"
+      "story": {
+        "built": "Intégré au véhicule.",
+        "silent": "Aucun bouton à presser. Il fonctionne tout seul.",
+        "knows": "Au moment de l'impact, il sait déjà.",
+        "parts": "Six modules. Une seule décision."
+      },
+      "scrollHint": "Faites défiler pour explorer"
     },
     "carousel": {
       "accelerometer": {
@@ -141,58 +138,40 @@
         "title": "LoRaWAN",
         "desc": "Radio longue portée pour les zones sans aucune couverture cellulaire."
       },
-      "antenna": {
-        "title": "Antenne",
-        "desc": "Diffuse les signaux radio hors du boîtier blindé."
-      }
-    },
-    "chain": {
-      "title": "Quatre étapes. Une seule chaîne.",
-      "step1Title": "Accident",
-      "step1Desc": "La boîte noire détecte le crash et géolocalise le véhicule.",
-      "step2Title": "Alerte",
-      "step2Desc": "Secours, témoins proches et contacts sont alertés par data ou SMS.",
-      "step3Title": "Évaluation",
-      "step3Desc": "L'IA estime la gravité et localise les blessures corporelles.",
-      "step4Title": "Orientation",
-      "step4Desc": "Le blessé est orienté vers l'hôpital adapté, préparé à son arrivée."
-    },
-    "numbers": {
-      "title": "Entraîné sur des données réelles d'accidents.",
-      "detectionScore": "0.990",
-      "detectionDesc": "Détection d'accident · précision moyenne sur 24 174 enregistrements de véhicules inconnus.",
-      "severityScore": "0.889",
-      "severityDesc": "Classement de gravité · AUC sur accidents de validation.",
-      "regionScore": "0.827",
-      "regionDesc": "Régions lésées · AUC moyenne sur les 7 régions corporelles.",
-      "footnote": "Scores sur jeu de test. Les données proviennent de flottes commerciales ; nous prévoyons un réétalonnage sur notre propre boîte noire. Estimations d'aide à la décision, pas un diagnostic."
-    },
-    "resilience": {
-      "title": "Quand le réseau tombe, la chaîne reste intacte.",
-      "dataTitle": "Données mobiles",
-      "dataDesc": "Télémétrie complète et flux capteurs haute fréquence.",
-      "smsTitle": "Secours par SMS",
-      "smsDesc": "Données compressées en 160 caractères sur réseau 2G faible.",
-      "relayTitle": "Relais de proximité",
-      "relayDesc": "Transmission maillée entre véhicules environnants.",
-      "satTitle": "SOS Satellite",
-      "satDesc": "Liaison d'urgence directe pour routes sahariennes isolées.",
-      "active": "Actif",
-      "roadmap": "Feuille de route"
-    },
-    "platform": {
-      "title": "Une plateforme, trois vues dédiées.",
-      "citizenTitle": "Application citoyenne",
-      "citizenDesc": "Mode conduite, compte à rebours, alerte des secouristes.",
-      "citizenTag": "Mobile",
-      "responderTitle": "Console de régulation",
-      "responderDesc": "Carte temps réel, reconstruction 3D, file de tri.",
-      "hospitalTitle": "Tableau de bord hospitalier",
-      "hospitalDesc": "Carte corporelle 3D des lésions, profil, constantes, ETA."
+      "prev": "Composant précédent",
+      "next": "Composant suivant",
+      "loading": "Chargement du modèle 3D",
+      "rotate": "Faites glisser pour tourner"
     },
     "footer": {
       "byline": "Conçu pour SolveX 3.0 · Université HIS",
       "disclaimer": "Flux de boîte noire simulé."
+    },
+    "crash": {
+      "intro": "Un trajet ordinaire.",
+      "carLabel": "Une voiture roulant vers un mur",
+      "toastTitle": "Oh non, vous avez eu un accident.",
+      "detected": {
+        "title": "Accident détecté.",
+        "detail": "Détection : précision moyenne de 0,990 sur 24 174 enregistrements de test."
+      },
+      "alert": {
+        "title": "Les secours sont alertés.",
+        "detail": "Par data, ou par SMS depuis la SIM du boîtier quand il n'y a pas de réseau."
+      },
+      "estimate": {
+        "title": "Blessures estimées.",
+        "detail": "Classement de gravité AUC 0,889. Régions blessées AUC moyenne 0,827. Des estimations pour savoir où regarder en premier."
+      },
+      "hospital": {
+        "title": "Le bon hôpital est prêt.",
+        "detail": "Les secours et les urgences voient la même situation."
+      },
+      "open": {
+        "hospital": "Ouvrir la vue hôpital",
+        "responder": "Ouvrir la vue secours"
+      },
+      "note": "Chronologie indicative. Données de démonstration simulées."
     }
   },
   "hospital": {
@@ -229,7 +208,57 @@
     "roleHospital": "Hôpital",
     "ambulance": "Ambulance",
     "route": "Itinéraire",
-    "minSec": "min:sec"
+    "minSec": "min:sec",
+    "noVitals": "Pas encore de constantes. Brassard ou montre non connectés.",
+    "displayHint": "Les valeurs colorées sont une simple indication d'affichage.",
+    "hr": "Fréquence cardiaque",
+    "spo2": "SpO₂",
+    "bp": "Tension",
+    "vitalsSource": {
+      "watch": "Montre connectée",
+      "paramedic_cuff": "Brassard secouriste",
+      "manual": "Manuel"
+    },
+    "ageSex": "Âge / sexe",
+    "ageValue": "{age} ans",
+    "male": "Homme",
+    "female": "Femme",
+    "bloodType": "Groupe sanguin",
+    "chronic": "Maladies chroniques",
+    "allergies": "Allergies",
+    "medications": "Médicaments",
+    "emergencyContact": "Contact d'urgence",
+    "none": "Aucun",
+    "bloodThinners": "Anticoagulants",
+    "pregnant": "Enceinte",
+    "whereToLook": "Où regarder en premier",
+    "m4Estimate": "Estimation M4",
+    "patientFile": "Dossier patient",
+    "department": "Service des urgences",
+    "incomingTitle": "Patients attendus",
+    "openTwin": "Ouvrir le jumeau numérique",
+    "backToRecord": "Retour au dossier",
+    "viewOnBody": "Voir sur le corps",
+    "alertsTitle": "Avant traitement",
+    "allergyTo": "Allergie :",
+    "crashTitle": "Mécanisme de l'accident",
+    "noCrashData": "Pas de télémétrie. Rapport SMS uniquement.",
+    "speedBefore": "Vitesse avant",
+    "deltaV": "Delta-V",
+    "impact": "Impact",
+    "rollover": "Tonneau",
+    "belt": "Ceinture",
+    "airbag": "Airbag",
+    "yes": "Oui",
+    "no": "Non",
+    "unknown": "Inconnu",
+    "timelineTitle": "Chronologie",
+    "impactSide": {
+      "front": "Avant",
+      "right": "Côté droit",
+      "rear": "Arrière",
+      "left": "Côté gauche"
+    }
   },
   "responder": {
     "title": "Vue Secours",
@@ -278,7 +307,98 @@
     "timelineTitle": "Chronologie de l'intervention",
     "smsFeedTitle": "Flux radio SMS direct",
     "helpersTitle": "Secouristes à proximité",
-    "recommended": "Recommandé"
+    "recommended": "Recommandé",
+    "smsOnly": "SMS uniquement, pas de télémétrie. Position et gravité viennent du message.",
+    "offlineBanner": "Réseau coupé. Mode SMS : télémétrie de la boîte noire inaccessible.",
+    "phoneTriage": "Estimation par appel",
+    "details": "Chronologie, SMS, secouristes, hôpitaux",
+    "yellowLine": "Ligne jaune : {count} conducteurs alertés",
+    "callVolunteer": "Appeler",
+    "volunteerCalling": "Appel en cours",
+    "volunteerOnWay": "En route",
+    "kind": {
+      "helper_medic": "Médecin",
+      "helper_first_aider": "Secouriste",
+      "volunteer": "Volontaire",
+      "staff": "Personnel"
+    },
+    "origin": {
+      "blackbox": "Boîte noire",
+      "phone": "Appel",
+      "zone": "Suivi zone sans réseau"
+    },
+    "call": {
+      "open": "Nouvel appel",
+      "title": "Nouvel incident depuis un appel",
+      "submit": "Enregistrer",
+      "cancel": "Annuler",
+      "location": "Lieu",
+      "locationHint": "Route, km, direction",
+      "victims": "Victimes",
+      "yes": "Oui",
+      "no": "Non",
+      "note": "Les réponses donnent une première estimation de gravité. Simulé.",
+      "questions": {
+        "conscious": "La victime est-elle consciente ?",
+        "breathing": "La victime respire-t-elle ?",
+        "bleeding": "Saignement abondant ?",
+        "trapped": "Coincée dans le véhicule ?"
+      }
+    },
+    "zone": {
+      "headingTitle": "{driver} se dirige vers une zone sans réseau",
+      "headingText": "Sur {road}, retour prévu avant {backBy}. Une fois le signal perdu, plus rien ne nous parvient.",
+      "overdueTitle": "{driver} n'est pas de retour",
+      "overdueText": "Attendu avant {backBy}. Dernière position à {lastSeen}, à l'entrée de la zone. Le contact d'urgence et la Gendarmerie sont prévenus.",
+      "warn": "L'avertir de ne pas y aller",
+      "warned": "Averti",
+      "noHelp": "Dire que les secours ne peuvent pas l'atteindre",
+      "toldNoHelp": "Prévenu",
+      "keepWatching": "OK, continuer le suivi",
+      "gotIt": "Compris",
+      "note": "Durée compressée. Données de démo simulées.",
+      "simulate": "Conducteur vers une zone sans réseau"
+    },
+    "workspace": {
+      "title": "Régulation",
+      "available": "{count} ambulances libres",
+      "victims": "{count, plural, one {# victime} other {# victimes}}",
+      "victimsTitle": "Victimes",
+      "victim": "Victime",
+      "severity": "Gravité",
+      "triage": "Triage",
+      "destination": "Destination",
+      "digitalTwin": "Jumeau numérique",
+      "triageColor": {
+        "green": "Vert : léger",
+        "yellow": "Jaune : différé",
+        "red": "Rouge : immédiat",
+        "black": "Noir : décédé"
+      },
+      "ambulanceTitle": "Ambulance",
+      "noAmbulance": "Aucune ambulance assignée.",
+      "unit": "Unité",
+      "etaScene": "Arrivée sur les lieux",
+      "etaHospital": "Arrivée à l’hôpital",
+      "contactsTitle": "Appels",
+      "callDriver": "Appeler le conducteur",
+      "callContact": "Appeler le contact d’urgence",
+      "callNote": "Simulé : pas encore de ligne téléphonique.",
+      "noHelpers": "Aucun secouriste à portée. Élargissez le rayon avec Appel à la solidarité.",
+      "confirmHelper": "Confirmer le secouriste",
+      "cardsSent": "Fiches premiers secours envoyées",
+      "noTelemetry": "Pas de télémétrie pour cet incident.",
+      "expandMap": "Agrandir la carte",
+      "replay3d": "Replay 3D",
+      "helpersOnWay": "Secouristes en route",
+      "worstVictim": "victime la plus grave",
+      "progress": "Avancement de la mission",
+      "callDriverShort": "Conducteur",
+      "callContactShort": "Contact d’urgence",
+      "widen": "Élargir le rayon",
+      "cardsSentShort": "Fiches envoyées",
+      "confirmHelperShort": "Confirmer"
+    }
   },
   "severity": {
     "low": "Faible",

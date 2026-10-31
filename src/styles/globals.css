@@ -238,3 +238,40 @@ body {
 .ant-switch-small:has(.ant-switch-inner-unchecked) {
   min-width: 60px !important;
 }
+
+/* Landing: resting status LED on the first frame */
+.led-pulse {
+  border-radius: 9999px;
+  background: var(--brand);
+  filter: blur(6px);
+  opacity: 0;
+  animation: led-pulse var(--dur-led) var(--ease-in-out) infinite;
+}
+@keyframes led-pulse {
+  0%, 72%, 100% { opacity: 0; }
+  84% { opacity: 0.85; }
+}
+
+/* Landing: gentle float on the carousel centre piece */
+.carousel-bob {
+  animation: carousel-bob var(--dur-bob) var(--ease-in-out) infinite;
+}
+.carousel-bob[data-held='true'] {
+  animation-play-state: paused;
+}
+@keyframes carousel-bob {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -10px; }
+}
+
+.carousel-text {
+  animation: carousel-text var(--dur-base) var(--ease-out) both;
+}
+@keyframes carousel-text {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .led-pulse, .carousel-bob, .carousel-text { animation: none; }
+}

@@ -1,161 +1,150 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { ScrollSequence } from './ScrollSequence';
+import { ScrollSequence, fitFrame, type FrameRect, type ScrollSequenceHandle } from './ScrollSequence';
 import { ComponentCarousel } from './ComponentCarousel';
-import { SequenceSimulator } from './SequenceSimulator';
 import sequenceData from '@/lib/sequence.json';
+
+const SCREWS_SHARE = [0.1, 0.5];   // share of the frame scroll spent before and through the screws
+const SEQUENCE_END = 0.92;      // share of the section's scroll spent on frames; the rest holds the carousel
+const FRAME_SMOOTHING = 0.14;
+const LED = { x: 0.331, y: 0.307, size: 0.034 };   // green LED on the first frame, as a share of the frame
 
 export function BlackboxSection() {
   const t = useTranslations('landing.sequence');
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const sequenceRef = useRef<ScrollSequenceHandle>(null);
+  const [line, setLine] = useState(0);
+  const [atStart, setAtStart] = useState(true);
+  const [carousel, setCarousel] = useState(false);
+  const [rect, setRect] = useState<FrameRect | null>(null);
+  const [reduced, setReduced] = useState(false);
 
-  const totalFrames = sequenceData.desktop.count;
+  const story = sequenceData.story;
+  const last = sequenceData.count - 1;
 
-  const [currentFrame, setCurrentFrame] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const [isSimulatorMode, setIsSimulatorMode] = useState(false);
-  const [carouselIndex, setCarouselIndex] = useState(3); // ESP32 center
+  // Scroll to frame, piecewise: the frames between the 2nd and 3rd story lines are the screws.
+  const paced = useCallback(
+    (p: number) => {
+      const stops = [
+        [0, 0],
+        [SCREWS_SHARE[0], story[1].frame],
+        [SCREWS_SHARE[1], story[2].frame],
+        [1, last],
+      ];
+      const i = stops.findIndex(([share], n) => n > 0 && p <= share);
+      const [p0, f0] = stops[i - 1];
+      const [p1, f1] = stops[i];
+      return f0 + ((p - p0) / (p1 - p0)) * (f1 - f0);
+    },
+    [last, story]
+  );
 
-  // Check URL query for ?debug=1 or ?simulator=1
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('debug') === '1' || params.get('simulator') === '1') {
-        setIsSimulatorMode(true);
-      }
-    }
+    setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    const measure = () => {
+      const stage = stageRef.current;
+      if (stage) setRect(fitFrame(stage.clientWidth, stage.clientHeight));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
   }, []);
 
-  // Frame progress: 0 to 1
-  const progress = totalFrames > 1 ? currentFrame / (totalFrames - 1) : 0;
-
-  // Autoplay ticker when isPlaying is true
   useEffect(() => {
-    if (!isPlaying) return;
-    const baseFps = 10;
-    const intervalMs = 1000 / (baseFps * speed);
+    if (reduced) {
+      setCarousel(true);
+      return;
+    }
+    let raf = 0;
+    let current = 0;
+    let drawn = -1;
 
-    const interval = setInterval(() => {
-      setCurrentFrame((prev) => {
-        if (prev >= totalFrames - 1) {
-          setIsPlaying(false);
-          return totalFrames - 1;
-        }
-        return prev + 1;
-      });
-    }, intervalMs);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, speed, totalFrames]);
-
-  // Scroll listener when NOT in manual simulator mode
-  useEffect(() => {
-    if (isSimulatorMode) return;
-
-    const handleScroll = () => {
+    const tick = () => {
       const section = sectionRef.current;
-      if (!section) return;
+      if (section) {
+        const travel = section.offsetHeight - window.innerHeight;
+        const scrolled = -section.getBoundingClientRect().top;
+        const progress = Math.max(0, Math.min(1, scrolled / travel));
+        const target = paced(Math.min(1, progress / SEQUENCE_END));
+        current += (target - current) * FRAME_SMOOTHING;
+        if (Math.abs(target - current) < 0.02) current = target;
 
-      const rect = section.getBoundingClientRect();
-      const scrollHeight = section.scrollHeight - window.innerHeight;
-      if (scrollHeight <= 0) return;
-
-      const scrolled = -rect.top;
-      const p = Math.max(0, Math.min(1, scrolled / scrollHeight));
-      const targetFrame = Math.round(p * (totalFrames - 1));
-      setCurrentFrame(targetFrame);
+        const frame = Math.round(current);
+        if (frame !== drawn) {
+          drawn = frame;
+          sequenceRef.current?.draw(frame);
+          let active = 0;
+          story.forEach((entry, i) => {
+            if (frame >= entry.frame) active = i;
+          });
+          setLine(active);
+          setAtStart(frame < 2);
+          setCarousel(frame >= last - 1);
+        }
+      }
+      raf = requestAnimationFrame(tick);
     };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [last, paced, reduced, story]);
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isSimulatorMode, totalFrames]);
-
-  // Handoff to carousel in Phase B / C (frames 320 to 338 or progress > 0.95)
-  const isCarouselActive = currentFrame >= totalFrames - 10;
-  const carouselOpacity = Math.max(0, Math.min(1, (currentFrame - (totalFrames - 16)) / 6));
-
-  const textOpacity = Math.max(0, 1 - progress / 0.15);
-
-  const handleFrameChange = (frame: number) => {
-    setCurrentFrame(frame);
-    setIsSimulatorMode(true);
-  };
-
-  const togglePlay = () => {
-    setIsSimulatorMode(true);
-    setIsPlaying((p) => !p);
-  };
+  const lineHeight = 'clamp(2.25rem, 3.6vw, 3.25rem)';
 
   return (
-    <section
-      id="sequence"
-      ref={sectionRef}
-      className={`relative w-full ${isSimulatorMode ? 'h-screen' : 'h-[450vh]'} bg-bg`}
-    >
-      {/* Sticky Viewport Stage */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-between">
-        {/* Upper Stage: Blackbox 2D Canvas */}
-        <div className="relative w-full h-full flex items-center justify-center">
-          {/* ScrollSequence Canvas */}
-          <div
-            className="absolute inset-0 w-full h-full transition-opacity duration-300"
-            style={{ opacity: isCarouselActive ? 1 - carouselOpacity : 1 }}
-          >
-            <ScrollSequence
-              externalFrame={currentFrame}
-              onFrameUpdate={(f) => setCurrentFrame(f)}
-            />
-          </div>
+    <section id="sequence" ref={sectionRef} className={`relative w-full bg-bg ${reduced ? 'h-screen' : 'h-[1300vh]'}`}>
+      <div ref={stageRef} className="sticky top-0 h-screen w-full overflow-hidden">
+        <div
+          className="absolute inset-0 transition-opacity duration-300"
+          style={{ opacity: carousel ? 0 : 1 }}
+        >
+          <ScrollSequence ref={sequenceRef} />
+        </div>
 
-          {/* Interactive Component Carousel (Handoff overlay) */}
+        {rect && (
           <div
-            className={`absolute inset-0 w-full h-full flex items-center justify-center transition-opacity duration-500 ${
-              isCarouselActive ? 'pointer-events-auto' : 'pointer-events-none opacity-0'
-            }`}
-            style={{ opacity: isCarouselActive ? carouselOpacity : 0 }}
-          >
-            <div className="w-full max-w-6xl mx-auto pt-4 md:pt-8">
-              <ComponentCarousel
-                activeIndex={carouselIndex}
-                onSelectComponent={setCarouselIndex}
-              />
-            </div>
-          </div>
+            className="led-pulse absolute pointer-events-none transition-opacity"
+            style={{
+              left: rect.x + rect.w * LED.x,
+              top: rect.y + rect.h * LED.y,
+              width: rect.w * LED.size,
+              height: rect.w * LED.size,
+              translate: '-50% -50%',
+              display: atStart ? 'block' : 'none',
+            }}
+          />
+        )}
 
-          {/* Intro Text Overlay (fades out in first 15% of scroll) */}
+        {/* Story lines: the current one is lit, like lyrics */}
+        <div
+          className="absolute inset-x-0 bottom-[3vh] px-6 text-center pointer-events-none overflow-hidden transition-opacity duration-300"
+          style={{ height: `calc(${lineHeight} * 2)`, opacity: carousel ? 0 : 1 }}
+          aria-live="polite"
+        >
           <div
-            className="absolute bottom-24 inset-x-0 mx-auto text-center px-4 max-w-xl transition-opacity duration-300 pointer-events-none"
-            style={{ opacity: textOpacity }}
+            className="transition-transform duration-500 ease-out"
+            style={{ transform: `translateY(calc(${lineHeight} * ${-line}))` }}
           >
-            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-ink mb-2">
-              {t('title')}
-            </h2>
-            <p className="text-base md:text-xl text-muted font-normal">
-              {t('lead')}
-            </p>
-            <div className="mt-4 flex items-center justify-center gap-2 text-xs font-mono text-muted uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-              <span>{t('scrollHint')}</span>
-            </div>
+            {story.map((entry, i) => (
+              <p
+                key={entry.key}
+                className="font-semibold tracking-tight text-ink transition-opacity duration-500"
+                style={{
+                  opacity: i === line ? 1 : 0.14,
+                  height: lineHeight,
+                  lineHeight,
+                  fontSize: 'clamp(1.25rem, 2.4vw, 2.125rem)',
+                }}
+              >
+                {t(`story.${entry.key}`)}
+              </p>
+            ))}
           </div>
         </div>
 
-        {/* Floating Simulator HUD - Only active with ?debug=1 or ?simulator=1 */}
-        {isSimulatorMode && (
-          <SequenceSimulator
-            currentFrame={currentFrame}
-            totalFrames={totalFrames}
-            onFrameChange={handleFrameChange}
-            isPlaying={isPlaying}
-            onTogglePlay={togglePlay}
-            speed={speed}
-            onSpeedChange={setSpeed}
-          />
-        )}
+        {rect && <ComponentCarousel rect={rect} visible={carousel} />}
       </div>
     </section>
   );

@@ -1,0 +1,133 @@
+diff --git a/server/app.py b/server/app.py
+index e2c0d7f..317e420 100644
+--- a/server/app.py
++++ b/server/app.py
+@@ -22,6 +22,7 @@ import numpy as np
+ import uvicorn
+ from annotated_types import Len
+ from fastapi import FastAPI, Request, WebSocket
++from fastapi.middleware.cors import CORSMiddleware
+ from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse
+ from fastapi.staticfiles import StaticFiles
+ from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+@@ -31,6 +32,7 @@ from database import Database
+ from demo_data import SCENARIOS
+ from incident import Engine
+ from m2_model import M2, bb
++from models_api import make_models_router
+ from ops import make_router
+ from severity import Severity
+ from stream import AFTER_S, BEFORE_S, HZ, DeviceStream
+@@ -240,8 +242,12 @@ async def lifespan(app):
+         task.cancel()
+ 
+ 
++WEB_ORIGINS = ["http://localhost:3000", "http://localhost:3100"]  # the Next.js site
++
+ app = FastAPI(title="SolveX server", lifespan=lifespan)
++app.add_middleware(CORSMiddleware, allow_origins=WEB_ORIGINS, allow_methods=["*"], allow_headers=["*"])
+ app.include_router(make_router(engine))
++app.include_router(make_models_router(engine.severity))
+ 
+ 
+ @app.websocket("/ws/telemetry")
+diff --git a/server/models_api.py b/server/models_api.py
+new file mode 100644
+index 0000000..a0df5bb
+--- /dev/null
++++ b/server/models_api.py
+@@ -0,0 +1,94 @@
++"""
++M1, M3 and M4 over HTTP, for the website. Same steps as "Using the models" in MODEL_SPEC.md.
++M1 is loaded on the first call, so a missing M1 file only fails its own endpoint.
++"""
++import json
++from pathlib import Path
++from typing import Literal
++
++import pandas as pd
++from fastapi import APIRouter, HTTPException
++from pydantic import BaseModel
++
++M1_MODELS = Path(__file__).resolve().parent.parent / "m1" / "models"
++M1_NAME = "risk_model_nohist"
++
++
++class Road(BaseModel):
++    catr: int
++    plan: int
++    vma: float
++    int: int
++    agg: int
++    circ: int
++    nbv: float
++    prof: int
++    infra: int
++    hour: float
++    weekday: float
++    month: float
++    is_weekend: float
++    is_dark: float
++    rain_mm: float
++    rain_3h_mm: float
++    is_rain: float
++    is_fog: float
++    is_snow: float
++    is_storm: float
++
++
++class Crash(BaseModel):
++    dv_kmh: float
++    pdof_deg: float
++    rollover: int
++    multi_impact: int
++    body: Literal["car", "utility", "van", "pickup"] = "car"
++    age: float
++    male: int
++
++
++class RoadRisk:
++    def __init__(self):
++        import lightgbm as lgb
++
++        self.config = json.loads((M1_MODELS / f"{M1_NAME}.json").read_text())
++        self.model = lgb.Booster(model_file=str(M1_MODELS / f"{M1_NAME}.txt"))
++
++    def assess(self, road):
++        c = self.config
++        x = pd.DataFrame([road])[c["features"]].astype(float)
++        for col, cats in zip(c["categorical"], self.model.pandas_categorical):
++            x[col] = pd.Categorical(x[col], categories=cats)
++        p = float(self.model.predict(x)[0])
++        b = c["base_rate"]
++        times = (p / (1 - p)) / (b / (1 - b))
++        level = "very high" if times >= 3 else "high" if times >= 1.5 else "medium" if times >= 0.7 else "low"
++        return {"p": p, "times_average": times, "level": level}
++
++
++def make_models_router(severity):
++    router = APIRouter(prefix="/api/models")
++    road_risk = []
++
++    @router.post("/m1")
++    def m1(body: Road):
++        if not road_risk:
++            try:
++                road_risk.append(RoadRisk())
++            except (OSError, ImportError) as e:
++                raise HTTPException(503, f"M1 is not available: {e}")
++        return road_risk[0].assess(body.model_dump())
++
++    def assess(body):
++        case = body.model_dump(exclude={"age", "male"})
++        return severity.assess(case, body.age, body.male)
++
++    @router.post("/m3")
++    def m3(body: Crash):
++        return assess(body)["m3"]
++
++    @router.post("/m4")
++    def m4(body: Crash):
++        return assess(body)["m4"]
++
++    return router

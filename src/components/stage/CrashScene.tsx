@@ -2,24 +2,94 @@
 
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Html, PerformanceMonitor } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { OrbitControls, useGLTF, useTexture, Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { useTranslations } from 'next-intl';
 
 import type { Incident, NearbyPerson, NearbyVehicle } from '@/lib/data/types';
 import { useReplayStore } from '@/lib/stores/replayStore';
-import { impactDirectionToScene } from '@/lib/three/axes';
 import { STAGE_COLORS } from '@/lib/three/materials';
 
 // Preload models in browser environment
 if (typeof window !== 'undefined') {
-  useGLTF.preload('/models/car.glb');
+  useGLTF.preload('/models/crash/sedan-sports.glb');
   useGLTF.preload('/models/ambulance.glb');
+  useGLTF.preload('/models/crash/cone.glb');
 }
 
 export interface CrashSceneProps {
   incident?: Incident | null;
   className?: string;
+  /** False while the map covers the scene: the canvas stays alive but stops drawing. */
+  active?: boolean;
+}
+
+const ROAD_WIDTH = 7.4; // 2 x 3.7m lanes
+const ROAD_LENGTH = 320;
+const BARRIER_Z = 2.6;    // the car's nose meets the barrier here at T=0
+
+/** The road photo tiled along the road; its lanes run along the image height. */
+function RoadSurface() {
+  const texture = useTexture('/models/crash/road.jpg');
+  const geometry = useMemo(() => {
+    const plane = new THREE.PlaneGeometry(ROAD_WIDTH, ROAD_LENGTH);
+    const uv = plane.attributes.uv as THREE.BufferAttribute;
+    const tiles = ROAD_LENGTH / ROAD_WIDTH;
+    // Only the asphalt strip of the photo (u 0.04..0.72, centre line at 0.38) is used, so its lanes sit at ±LANE_X.
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, 0.04 + uv.getX(i) * 0.68, uv.getY(i) * tiles);
+    return plane;
+  }, []);
+
+  useEffect(() => {
+    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 8;
+    texture.needsUpdate = true;
+  }, [texture]);
+
+  return (
+    <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <meshStandardMaterial map={texture} roughness={0.92} />
+    </mesh>
+  );
+}
+
+/** A concrete jersey barrier across the ego lane, with a reflective band and cones. */
+function Barrier() {
+  const { scene: cone } = useGLTF('/models/crash/cone.glb');
+  const cones = useMemo(() => [0, 1, 2].map(() => cone.clone(true)), [cone]);
+  const profile = useMemo(() => {
+    const shape = new THREE.Shape();
+    shape.moveTo(-0.3, 0);
+    shape.lineTo(0.3, 0);
+    shape.lineTo(0.3, 0.08);
+    shape.lineTo(0.16, 0.26);
+    shape.lineTo(0.09, 0.82);
+    shape.lineTo(-0.09, 0.82);
+    shape.lineTo(-0.16, 0.26);
+    shape.lineTo(-0.3, 0.08);
+    shape.closePath();
+    const geometry = new THREE.ExtrudeGeometry(shape, { depth: 3.6, bevelEnabled: false });
+    geometry.translate(0, 0, -1.8);
+    return geometry;
+  }, []);
+
+  return (
+    <group position={[LANE_X, 0, BARRIER_Z + 0.3]}>
+      <mesh geometry={profile} rotation={[0, Math.PI / 2, 0]} castShadow receiveShadow>
+        <meshStandardMaterial color="#B9B6AE" roughness={0.85} />
+      </mesh>
+      {[-1.2, 0, 1.2].map((x) => (
+        <mesh key={x} position={[x, 0.62, -0.115]} rotation={[0.12, 0, 0]}>
+          <planeGeometry args={[0.9, 0.12]} />
+          <meshStandardMaterial color="#D21034" emissive="#D21034" emissiveIntensity={0.25} />
+        </mesh>
+      ))}
+      {cones.map((c, i) => (
+        <primitive key={i} object={c} position={[-1.4 + i * 1.4, 0, -1.4 - (i % 2) * 0.5]} scale={0.6} />
+      ))}
+    </group>
+  );
 }
 
 /**
@@ -29,9 +99,9 @@ export interface CrashSceneProps {
  */
 function ProceduralWorld({ impactSide = 'right' }: { impactSide?: 'left' | 'right' }) {
   // Road dimensions
-  const roadWidth = 7.4; // 2 x 3.7m lanes
+  const roadWidth = ROAD_WIDTH;
   const shoulderWidth = 1.8;
-  const roadLength = 320;
+  const roadLength = ROAD_LENGTH;
 
   // Generate dashed center line instances
   const dashCount = Math.floor(roadLength / 7.5); // 3m dash + 4.5m gap = 7.5m cycle
@@ -60,47 +130,20 @@ function ProceduralWorld({ impactSide = 'right' }: { impactSide?: 'left' | 'righ
 
   return (
     <group position={[0, 0, 0]}>
-      {/* 1. Asphalt Road Surface */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[roadWidth, roadLength]} />
-        <meshStandardMaterial color="#1B2621" roughness={0.88} metalness={0.05} />
-      </mesh>
+      <RoadSurface />
 
-      {/* 2. Road Shoulders */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[-roadWidth / 2 - shoulderWidth / 2, -0.005, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[shoulderWidth, roadLength]} />
-        <meshStandardMaterial color="#141C18" roughness={0.95} />
-      </mesh>
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[roadWidth / 2 + shoulderWidth / 2, -0.005, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[shoulderWidth, roadLength]} />
-        <meshStandardMaterial color="#141C18" roughness={0.95} />
-      </mesh>
-
-      {/* 3. Dashed Center Line (white #E8EEEA) */}
-      {dashes.map((z, idx) => (
-        <mesh key={idx} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, z]}>
-          <planeGeometry args={[0.15, 3.0]} />
-          <meshBasicMaterial color="#E8EEEA" />
+      {/* Shoulders */}
+      {[-1, 1].map((side) => (
+        <mesh
+          key={side}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[side * (roadWidth / 2 + shoulderWidth / 2), -0.005, 0]}
+          receiveShadow
+        >
+          <planeGeometry args={[shoulderWidth, roadLength]} />
+          <meshStandardMaterial color="#2A2F2B" roughness={0.95} />
         </mesh>
       ))}
-
-      {/* 4. Outer Shoulder White Lines */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-roadWidth / 2 + 0.1, 0.005, 0]}>
-        <planeGeometry args={[0.12, roadLength]} />
-        <meshBasicMaterial color="#E8EEEA" opacity={0.85} transparent />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[roadWidth / 2 - 0.1, 0.005, 0]}>
-        <planeGeometry args={[0.12, roadLength]} />
-        <meshBasicMaterial color="#E8EEEA" opacity={0.85} transparent />
-      </mesh>
 
       {/* 5. Guardrail on impact side */}
       <group position={[guardrailX, 0, 0]}>
@@ -151,6 +194,59 @@ function ProceduralWorld({ impactSide = 'right' }: { impactSide?: 'left' | 'righ
  * Ego Car 3D Component
  * Synchronized with the 16s blackbox replay clock.
  */
+const CAR_MODEL = '/models/crash/sedan-sports.glb';
+const CAR_SCALE = 1.6;
+const LANE_X = 1.85;
+const ROOF_HEIGHT = 1.29;     // the body sits this high once upside down
+const NOSE_START = 0.35;      // body z where the crumple zone begins
+const FLIP_SECONDS = 1.2;
+const SLIDE_SECONDS = 1.5;
+const REBOUND_METERS = 2.2;
+const GRAVITY = 9;
+const DEBRIS = [
+  { file: 'debris-door', vx: 2.6, vy: 3.4, vz: -1.2, spin: 7 },
+  { file: 'debris-bumper', vx: -3.4, vy: 2.5, vz: -0.6, spin: 9 },
+  { file: 'debris-tire', vx: 3.2, vy: 4.1, vz: -2.2, spin: 11 },
+  { file: 'debris-plate-a', vx: -2.2, vy: 3.1, vz: -1.6, spin: 8 },
+];
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+
+/** Where the car is at a replay time. The camera and the car read the same path. */
+function carPose(timeMs: number, impactMs: number, speedMs: number, impactDeg: number, rollover: boolean) {
+  if (timeMs < impactMs) {
+    return { x: LANE_X, y: 0, z: (-(impactMs - timeMs) / 1000) * speedMs, yaw: 0, roll: 0, seconds: -1 };
+  }
+  const seconds = (timeMs - impactMs) / 1000;
+  const slide = clamp01(seconds / SLIDE_SECONDS);
+  const side = Math.sin((impactDeg * Math.PI) / 180);
+  const linear = rollover ? clamp01(seconds / FLIP_SECONDS) : 0;
+  const flip = linear * linear * (3 - 2 * linear);
+  return {
+    x: LANE_X + slide * side * 0.5,
+    y: Math.sin(flip * Math.PI) * 1.9 + flip * ROOF_HEIGHT,
+    z: -(1 - (1 - slide) * (1 - slide)) * REBOUND_METERS,
+    yaw: slide * (side > 0 ? 0.35 : -0.35),
+    roll: flip * Math.PI,
+    seconds,
+  };
+}
+
+function incidentPose(incident: Incident | null | undefined, timeMs: number, impactMs: number) {
+  const crash = incident?.crash;
+  return carPose(
+    timeMs,
+    impactMs,
+    ((crash?.speedBeforeKmh ?? 80) * 1000) / 3600,
+    crash?.impactDirectionDeg ?? 90,
+    crash?.rollover ?? false
+  );
+}
+
+/**
+ * The same crash as the landing page: nose crushed, front wheels torn off,
+ * rolled onto the roof when the telemetry reports a rollover.
+ */
 function EgoCar({
   incident,
   isDegraded,
@@ -158,167 +254,142 @@ function EgoCar({
   incident?: Incident | null;
   isDegraded: boolean;
 }) {
-  const { scene: carGltfScene } = useGLTF('/models/car.glb');
+  const { scene: carGltfScene } = useGLTF(CAR_MODEL);
   const carRef = useRef<THREE.Group>(null);
-  const wheelsRef = useRef<THREE.Object3D[]>([]);
+  const rollRef = useRef<THREE.Group>(null);
+  const dented = useRef(-1);
 
   const currentTimeMs = useReplayStore((s) => s.currentTimeMs);
   const impactAtMs = useReplayStore((s) => s.impactAtMs);
 
-  const crash = incident?.crash;
-  const speedBeforeKmh = crash?.speedBeforeKmh ?? 80;
-  const speedBeforeMs = (speedBeforeKmh * 1000) / 3600; // m/s
-  const rollover = crash?.rollover ?? false;
-  const impactDeg = crash?.impactDirectionDeg ?? 90;
-
-  // Clone GLTF scene once
-  const clonedScene = useMemo(() => {
-    const clone = carGltfScene.clone(true);
-    // Tint body material to #DCE3DE per SPEC_3D
-    clone.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-        if (mesh.name === 'body') {
-          mesh.material = new THREE.MeshStandardMaterial({
-            color: '#DCE3DE',
-            metalness: 0.6,
-            roughness: 0.35,
-          });
-        }
+  // The crush moves vertices, so this car owns its geometry.
+  const { clonedScene, wheels, front, body, rest } = useMemo(() => {
+    const clonedScene = carGltfScene.clone(true);
+    const wheels: THREE.Object3D[] = [];
+    const front: THREE.Object3D[] = [];
+    clonedScene.traverse((node) => {
+      if (node.name.startsWith('wheel-')) wheels.push(node);
+      if (node.name.startsWith('wheel-front')) front.push(node);
+    });
+    let body: THREE.Mesh | null = null;
+    clonedScene.traverse((node) => {
+      if (!(node as THREE.Mesh).isMesh) return;
+      const mesh = node as THREE.Mesh;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      if (!body && !wheels.some((w) => w === mesh || w.getObjectById(mesh.id))) {
+        mesh.geometry = mesh.geometry.clone();
+        body = mesh;
       }
     });
-    return clone;
+    const mesh = body as THREE.Mesh | null;
+    const rest = mesh ? Float32Array.from(mesh.geometry.attributes.position.array) : null;
+    return { clonedScene, wheels, front, body: mesh, rest };
   }, [carGltfScene]);
 
-  // Extract wheel nodes for rotation
-  useEffect(() => {
-    const wheels: THREE.Object3D[] = [];
-    clonedScene.traverse((obj) => {
-      if (obj.name.startsWith('wheel')) {
-        wheels.push(obj);
-      }
-    });
-    wheelsRef.current = wheels;
-  }, [clonedScene]);
-
-  // Calculate car position, rotation and physics simulation at current replay time
   useFrame(() => {
-    if (!carRef.current) return;
+    if (!carRef.current || !rollRef.current) return;
 
     if (isDegraded) {
       // Degraded / SMS mode: static car at scene origin
       carRef.current.position.set(0, 0, 0);
       carRef.current.rotation.set(0, 0, 0);
+      rollRef.current.rotation.z = 0;
       return;
     }
 
-    const t = currentTimeMs;
-    const tImpact = impactAtMs;
+    const pose = incidentPose(incident, currentTimeMs, impactAtMs);
+    carRef.current.position.set(pose.x, pose.y, pose.z);
+    carRef.current.rotation.y = pose.yaw;
+    rollRef.current.rotation.z = pose.roll;
 
-    if (t < tImpact) {
-      // PRE-IMPACT: travels forward along lane 1 (x = 1.85) towards crash site at z = 0
-      const timeToImpactS = (tImpact - t) / 1000;
-      const zPos = -timeToImpactS * speedBeforeMs;
-      carRef.current.position.set(1.85, 0, zPos);
-      carRef.current.rotation.set(0, 0, 0);
+    const spin = (pose.z / 0.3) % (Math.PI * 2);
+    wheels.forEach((wheel) => {
+      wheel.rotation.x = spin;
+    });
+    front.forEach((wheel) => {
+      wheel.visible = pose.seconds < 0;
+    });
 
-      // Spin wheels
-      const wheelRotation = (zPos / 0.3) % (Math.PI * 2);
-      for (const wheel of wheelsRef.current) {
-        wheel.rotation.x = wheelRotation;
+    // Crush the nose once, with uneven dents. Rewinding the replay repairs it.
+    const crush = pose.seconds < 0 ? 0 : clamp01(pose.seconds / 0.2);
+    if (body && rest && crush !== dented.current) {
+      dented.current = crush;
+      const position = body.geometry.attributes.position;
+      for (let i = 0; i < position.count; i++) {
+        const x = rest[i * 3];
+        const y = rest[i * 3 + 1];
+        const z = rest[i * 3 + 2];
+        const nose = clamp01((z - NOSE_START) / 1.2);
+        const dent = Math.sin(x * 9) * Math.cos(y * 7);
+        position.setXYZ(
+          i,
+          x * (1 + nose * crush * 0.18) + dent * 0.05 * crush * nose,
+          y - nose * crush * (0.28 + dent * 0.08),
+          z - nose * nose * crush * 0.75
+        );
       }
-    } else {
-      // POST-IMPACT: at crash site with slide and optional rollover
-      const postImpactS = (t - tImpact) / 1000;
-
-      // Sliding forward decelerating to rest over 1.5s
-      const slideDuration = 1.5;
-      const slideFactor = Math.min(postImpactS / slideDuration, 1.0);
-      // Deceleration curve: ease-out quadratic
-      const slideDist = (1 - Math.pow(1 - slideFactor, 2)) * 6.5; // slides ~6.5m
-      const zPos = slideDist;
-
-      // Lateral shift and yaw angle from impact direction
-      const sideFactor = Math.sin((impactDeg * Math.PI) / 180);
-      const xPos = 1.85 + slideFactor * sideFactor * 1.6;
-
-      // Yaw rotation (car spins out slightly)
-      const yawAngle = slideFactor * (sideFactor > 0 ? 0.35 : -0.35);
-
-      // Rollover: rotate 360° over 1.2s around longitudinal z-axis
-      let rollAngle = 0;
-      if (rollover) {
-        const rollDuration = 1.2;
-        const rollProgress = Math.min(postImpactS / rollDuration, 1.0);
-        rollAngle = rollProgress * Math.PI * 2;
-      }
-
-      carRef.current.position.set(xPos, Math.sin(rollAngle) * 0.4, zPos);
-      carRef.current.rotation.set(0, yawAngle, rollAngle);
+      position.needsUpdate = true;
+      body.geometry.computeVertexNormals();
     }
   });
 
   return (
-    <group ref={carRef} position={[1.85, 0, 0]}>
-      <primitive object={clonedScene} />
+    <group ref={carRef} position={[LANE_X, 0, 0]}>
+      <group ref={rollRef} scale={CAR_SCALE}>
+        <primitive object={clonedScene} />
+      </group>
     </group>
   );
 }
 
-/**
- * 3D Impact Arrow Mesh
- * SPEC_3D: red impact arrow (--stage-impact, length ∝ ΔV, pointing toward impact side, fading over 3s)
- */
-function ImpactArrow({
-  incident,
-  isDegraded,
-}: {
-  incident?: Incident | null;
-  isDegraded: boolean;
-}) {
+/** Parts torn off at impact: ballistic hops, each landing keeps part of the speed. */
+function DebrisPiece({ file, vx, vy, vz, spin }: (typeof DEBRIS)[number]) {
+  const { scene } = useGLTF(`/models/crash/${file}.glb`);
+  const piece = useRef<THREE.Group>(null);
+  const clone = useMemo(() => {
+    const copy = scene.clone(true);
+    copy.traverse((node) => {
+      if ((node as THREE.Mesh).isMesh) (node as THREE.Mesh).castShadow = true;
+    });
+    return copy;
+  }, [scene]);
   const currentTimeMs = useReplayStore((s) => s.currentTimeMs);
   const impactAtMs = useReplayStore((s) => s.impactAtMs);
-  const crash = incident?.crash;
 
-  if (isDegraded || !crash) return null;
-
-  const t = currentTimeMs;
-  if (t < impactAtMs || t > impactAtMs + 3000) return null;
-
-  // Fading over 3 seconds
-  const fadeProgress = (t - impactAtMs) / 3000;
-  const opacity = Math.max(0, 1.0 - fadeProgress);
-
-  // Arrow length proportional to deltaV (typically 25..80 km/h -> 1.5..3.5 units)
-  const length = Math.max(1.5, Math.min(4.0, (crash.deltaVKmh / 80) * 3.5));
-
-  // Compute 3D direction vector
-  const [sx, sy, sz] = impactDirectionToScene(crash.impactDirectionDeg);
-  const arrowDir = new THREE.Vector3(sx, sy, sz).normalize();
-  const angleY = Math.atan2(arrowDir.x, arrowDir.z);
+  useFrame(() => {
+    const group = piece.current;
+    if (!group) return;
+    const t = Math.min((currentTimeMs - impactAtMs) / 1000, 2.4);
+    group.visible = t > 0;
+    let time = t;
+    let speed = vy;
+    let height = 0.8;
+    let slide = 0;
+    for (let hop = 0; hop < 3; hop++) {
+      const flight = (speed + Math.sqrt(speed * speed + 2 * GRAVITY * height)) / GRAVITY;
+      if (time < flight) break;
+      time -= flight;
+      slide += flight;
+      speed *= 0.42;
+      height = 0;
+      if (hop === 2) {
+        speed = 0;
+        time = 0;
+      }
+    }
+    const damped = 1 - Math.exp(-(slide + (speed ? time : 0)) * 0.9);
+    group.position.set(
+      LANE_X + (vx / 0.9) * damped,
+      0.12 + height + speed * time - 0.5 * GRAVITY * time * time,
+      BARRIER_Z - 0.4 + (vz / 0.9) * damped
+    );
+    group.rotation.set(spin * damped, spin * damped * 0.6, 0);
+  });
 
   return (
-    <group position={[1.85, 0.6, 0]} rotation={[0, angleY, 0]}>
-      {/* Arrow shaft */}
-      <mesh position={[0, 0, length / 2]}>
-        <cylinderGeometry args={[0.07, 0.07, length, 12]} />
-        <meshBasicMaterial
-          color={STAGE_COLORS.impact}
-          transparent
-          opacity={opacity * 0.85}
-        />
-      </mesh>
-      {/* Arrow head */}
-      <mesh position={[0, 0, length]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.22, 0.5, 12]} />
-        <meshBasicMaterial
-          color={STAGE_COLORS.impact}
-          transparent
-          opacity={opacity}
-        />
-      </mesh>
+    <group ref={piece} visible={false}>
+      <primitive object={clone} />
     </group>
   );
 }
@@ -332,10 +403,11 @@ function SurroundingVehicles({ vehicles = [] }: { vehicles?: NearbyVehicle[] }) 
 
   return (
     <group>
-      {vehicles.map((v, idx) => {
+      {vehicles.slice(0, 2).map((v, idx) => {
         // Position relative to crash site (projected onto scene road lanes)
-        const laneX = idx % 2 === 0 ? -1.85 : 1.85; // incoming vs ongoing lane
-        const zPos = -40 + idx * 35;
+        // Stopped in the other lane, past the barrier, so nothing sits in the ego car's path
+        const laneX = -LANE_X;
+        const zPos = 14 + idx * 16;
         const headingRad = (v.headingDeg * Math.PI) / 180;
 
         return (
@@ -479,7 +551,7 @@ function AmbulanceRoute({ incident }: { incident?: Incident | null }) {
  * SPEC_3D: 7 m behind, 3.2 m above the car, fov 50, looks 6 m ahead; lerp 0.1.
  * Orbit ±35° azimuth while paused. Camera shake at impact.
  */
-function ChaseCameraController({ isDegraded }: { isDegraded: boolean }) {
+function ChaseCameraController({ incident, isDegraded }: { incident?: Incident | null; isDegraded: boolean }) {
   const { camera } = useThree();
   const controlsRef = useRef<React.ComponentRef<typeof OrbitControls>>(null);
 
@@ -491,29 +563,13 @@ function ChaseCameraController({ isDegraded }: { isDegraded: boolean }) {
   useFrame(() => {
     const t = currentTimeMs;
     const tImpact = impactAtMs;
+    const pose = incidentPose(incident, t, tImpact);
+    const carX = isDegraded ? 0 : pose.x;
+    const carZ = isDegraded ? 0 : pose.z;
 
-    // Calculate car position in scene
-    let carZ = 0;
-    let carX = 1.85;
-
-    if (!isDegraded) {
-      if (t < tImpact) {
-        const timeToImpactS = (tImpact - t) / 1000;
-        carZ = -timeToImpactS * 22.2;
-      } else {
-        const postImpactS = (t - tImpact) / 1000;
-        const slideFactor = Math.min(postImpactS / 1.5, 1.0);
-        carZ = (1 - Math.pow(1 - slideFactor, 2)) * 6.5;
-        carX = 1.85 + slideFactor * 0.8;
-      }
-    } else {
-      carX = 0;
-      carZ = 0;
-    }
-
-    // Default chase pose: 7m behind, 3.2m above, looking 6m ahead
-    const targetCamPos = new THREE.Vector3(carX, 3.2, carZ + 7.0);
-    const targetLookAt = new THREE.Vector3(carX, 1.0, carZ - 6.0);
+    // Chase pose: the car drives towards +Z, so the camera sits 10m behind it, 4m above
+    const targetCamPos = new THREE.Vector3(carX, 4, carZ - 10);
+    const targetLookAt = new THREE.Vector3(carX, 0.8, carZ + 3);
 
     // Camera Shake at impact (amplitude from g, 250ms decay per SPEC_3D)
     if (!isDegraded && t >= tImpact && t < tImpact + 250) {
@@ -525,18 +581,13 @@ function ChaseCameraController({ isDegraded }: { isDegraded: boolean }) {
       targetCamPos.z += (Math.random() - 0.5) * shakeAmp;
     }
 
+    // One owner per frame: the follow while playing, OrbitControls (which updates itself) while paused.
     if (isPlaying) {
-      // Smooth follow during playback
       camera.position.lerp(targetCamPos, 0.1);
       camera.lookAt(targetLookAt);
-      if (controlsRef.current) {
-        controlsRef.current.target.lerp(targetLookAt, 0.1);
-        controlsRef.current.update();
-      }
-    } else if (controlsRef.current) {
-      // While paused, let user orbit within ±35° around the car look-at
-      controlsRef.current.target.set(carX, 1.0, carZ);
-      controlsRef.current.update();
+      controlsRef.current?.target.copy(targetLookAt);
+    } else {
+      controlsRef.current?.target.set(carX, 1.0, carZ);
     }
   });
 
@@ -549,8 +600,8 @@ function ChaseCameraController({ isDegraded }: { isDegraded: boolean }) {
       maxDistance={15}
       minPolarAngle={(Math.PI * 60) / 180}
       maxPolarAngle={(Math.PI * 85) / 180}
-      minAzimuthAngle={(-35 * Math.PI) / 180}
-      maxAzimuthAngle={(35 * Math.PI) / 180}
+      minAzimuthAngle={(145 * Math.PI) / 180}
+      maxAzimuthAngle={(215 * Math.PI) / 180}
       dampingFactor={0.08}
       enableDamping={true}
     />
@@ -561,17 +612,15 @@ function ChaseCameraController({ isDegraded }: { isDegraded: boolean }) {
  * Drive-mode Speed HUD
  * SPEC_3D: speed in large number bottom-center when playing pre-impact (stage-ink, mono, 56px), disappears after impact.
  */
-function SpeedHud({ isPlaying, currentTimeMs, impactAtMs, speedKmh }: {
-  isPlaying: boolean;
-  currentTimeMs: number;
-  impactAtMs: number;
-  speedKmh: number;
-}) {
+function SpeedHud({ speedKmh }: { speedKmh: number }) {
+  const currentTimeMs = useReplayStore((s) => s.currentTimeMs);
+  const impactAtMs = useReplayStore((s) => s.impactAtMs);
+  const isPlaying = useReplayStore((s) => s.isPlaying);
   if (!isPlaying || currentTimeMs >= impactAtMs) return null;
 
   return (
     <div
-      className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none select-none z-10 animate-fade-in"
+      className="absolute bottom-6 end-6 flex flex-col items-end pointer-events-none select-none z-10 animate-fade-in"
       aria-hidden="true"
     >
       <div className="flex items-baseline gap-1">
@@ -590,14 +639,8 @@ function SpeedHud({ isPlaying, currentTimeMs, impactAtMs, speedKmh }: {
 /**
  * Main CrashScene Component
  */
-export function CrashScene({ incident, className = '' }: CrashSceneProps) {
-  const [enableBloom, setEnableBloom] = useState(true);
-  const [dpr, setDpr] = useState<number>(1.5);
+export function CrashScene({ incident, className = '', active = true }: CrashSceneProps) {
   const [isTabVisible, setIsTabVisible] = useState(true);
-
-  const currentTimeMs = useReplayStore((s) => s.currentTimeMs);
-  const impactAtMs = useReplayStore((s) => s.impactAtMs);
-  const isPlaying = useReplayStore((s) => s.isPlaying);
 
   // Tab visibility check (Rule 11)
   useEffect(() => {
@@ -608,6 +651,7 @@ export function CrashScene({ incident, className = '' }: CrashSceneProps) {
     return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
+  const t = useTranslations('responder');
   const isDegraded = incident?.channel === 'sms' || !incident?.telemetry;
   const speedKmh = incident?.crash?.speedBeforeKmh ?? 80;
 
@@ -615,18 +659,11 @@ export function CrashScene({ incident, className = '' }: CrashSceneProps) {
     <div className={`relative w-full h-full select-none ${className}`}>
       {/* 3D WebGL Canvas */}
       <Canvas
-        dpr={dpr}
-        frameloop={isTabVisible ? 'always' : 'never'}
-        camera={{ position: [1.85, 3.2, 7.0], fov: 50 }}
+        dpr={[1, 1.5]}
+        frameloop={isTabVisible && active ? 'always' : 'never'}
+        camera={{ position: [1.85, 4, -10], fov: 50 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       >
-        <PerformanceMonitor
-          onDecline={() => {
-            setEnableBloom(false);
-            setDpr(1.0);
-          }}
-        />
-
         {/* Stage Lighting (SPEC_3D) */}
         <color attach="background" args={[STAGE_COLORS.bg]} />
         <fog attach="fog" args={[STAGE_COLORS.bg, 18, 70]} />
@@ -656,9 +693,9 @@ export function CrashScene({ incident, className = '' }: CrashSceneProps) {
 
           {/* Ego Car */}
           <EgoCar incident={incident} isDegraded={isDegraded} />
+          {!isDegraded && DEBRIS.map((piece) => <DebrisPiece key={piece.file} {...piece} />)}
 
-          {/* 3D Impact Arrow */}
-          <ImpactArrow incident={incident} isDegraded={isDegraded} />
+          {!isDegraded && <Barrier />}
 
           {/* Surrounding ghost vehicles */}
           <SurroundingVehicles vehicles={incident?.nearbyVehicles} />
@@ -670,35 +707,20 @@ export function CrashScene({ incident, className = '' }: CrashSceneProps) {
           <AmbulanceRoute incident={incident} />
 
           {/* Chase Camera Controller */}
-          <ChaseCameraController isDegraded={isDegraded} />
+          <ChaseCameraController incident={incident} isDegraded={isDegraded} />
 
-          {/* Bloom Postprocessing */}
-          {enableBloom && (
-            <EffectComposer multisampling={0}>
-              <Bloom
-                luminanceThreshold={0.85}
-                intensity={0.7}
-                mipmapBlur
-              />
-            </EffectComposer>
-          )}
         </Suspense>
       </Canvas>
 
       {/* Drive-mode Speed HUD Overlay */}
-      <SpeedHud
-        isPlaying={isPlaying}
-        currentTimeMs={currentTimeMs}
-        impactAtMs={impactAtMs}
-        speedKmh={speedKmh}
-      />
+      <SpeedHud speedKmh={speedKmh} />
 
       {/* Degraded SMS Mode Banner Overlay (SPEC_RESPONDER line 19) */}
-      {isDegraded && (
+      {incident?.channel === 'sms' && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 max-w-lg w-11/12 bg-[#0B1310]/90 backdrop-blur border border-amber-500/40 rounded-lg p-3 text-center shadow-2xl z-20">
           <div className="text-amber-400 font-medium text-xs flex items-center justify-center gap-1.5 mb-1">
             <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            SMS only — no telemetry. Position and severity from the message.
+            {t('smsOnly')}
           </div>
           {incident?.sms?.[0]?.raw && (
             <code className="text-[11px] font-mono text-zinc-300 block truncate dir-ltr select-all">

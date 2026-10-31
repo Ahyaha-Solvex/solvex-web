@@ -13,9 +13,9 @@ export function Hero() {
       {/* Decorative radial gradient aura */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-brand/5 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative max-w-4xl mx-auto flex flex-col items-center">
+      <div className="relative w-full max-w-7xl mx-auto flex flex-col items-center">
         {/* Eyebrow */}
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted mb-4 border border-border px-3 py-1 rounded-full bg-surface/60">
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted mb-10 md:mb-14 border border-border px-3 py-1 rounded-full bg-surface/60">
           {t('eyebrow')}
         </span>
 
@@ -23,7 +23,7 @@ export function Hero() {
         <h1
           dir="rtl"
           lang="ar"
-          className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold font-arabic tracking-normal text-ink mb-4 max-w-4xl mx-auto leading-[1.3] md:leading-[1.35]"
+          className="text-[clamp(1.25rem,5.1vw,5rem)] font-bold font-arabic tracking-normal text-ink mb-8 md:mb-12 whitespace-nowrap leading-[1.7]"
         >
           <span>وَمَنْ </span>
           <span

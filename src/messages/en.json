@@ -3,7 +3,7 @@
     "appName": "أَحْيَاهَا",
     "brand": "أَحْيَاهَا",
     "simBadge": "Simulated blackbox stream",
-    "medicalDisclaimer": "Estimate to prioritise, not a diagnosis.",
+    "medicalDisclaimer": "Estimate to prioritise. Where to look first.",
     "direction": "LTR",
     "loading": "Loading...",
     "error": "An error occurred",
@@ -105,16 +105,13 @@
       "openDemo": "Open the demo"
     },
     "sequence": {
-      "title": "Built into the car.",
-      "lead": "Seven modules. One decision.",
-      "scrollHint": "Scroll to explore",
-      "simulatorTitle": "Blackbox Sequence Simulator",
-      "frame": "Frame",
-      "clip": "Clip",
-      "play": "Play",
-      "pause": "Pause",
-      "speed": "Speed",
-      "jumpTo": "Jump to stage"
+      "story": {
+        "built": "Built into the car.",
+        "silent": "No button to press. It just works.",
+        "knows": "At the moment of impact, it already knows.",
+        "parts": "Six modules. One decision."
+      },
+      "scrollHint": "Scroll to explore"
     },
     "carousel": {
       "accelerometer": {
@@ -141,58 +138,40 @@
         "title": "LoRaWAN",
         "desc": "Long-range radio for places with no cellular signal."
       },
-      "antenna": {
-        "title": "Antenna",
-        "desc": "Carries the radio signals out of the box."
-      }
-    },
-    "chain": {
-      "title": "Four steps. One chain.",
-      "step1Title": "Accident",
-      "step1Desc": "The blackbox detects the impact and locates the car.",
-      "step2Title": "Alert",
-      "step2Desc": "Services, people nearby and contacts are alerted, by data or by SMS.",
-      "step3Title": "Evaluation",
-      "step3Desc": "AI estimates how badly people are hurt, and where.",
-      "step4Title": "Orientation",
-      "step4Desc": "The patient goes to the hospital that can treat them, already prepared."
-    },
-    "numbers": {
-      "title": "Trained on real crash data.",
-      "detectionScore": "0.990",
-      "detectionDesc": "Crash detection · average precision on 24,174 recordings from vehicles the model never saw.",
-      "severityScore": "0.889",
-      "severityDesc": "Severity ranking · AUC on held-out crashes.",
-      "regionScore": "0.827",
-      "regionDesc": "Injury regions · mean AUC across 7 body regions.",
-      "footnote": "Test-set scores. Detection data comes from commercial vehicles; we plan to recalibrate on our own blackbox. These are decision-support estimates, not diagnoses."
-    },
-    "resilience": {
-      "title": "When the network fails, the chain doesn't.",
-      "dataTitle": "Mobile data",
-      "dataDesc": "Full blackbox telemetry and high-rate sensor streams.",
-      "smsTitle": "SMS Fallback",
-      "smsDesc": "Compressed 160-char payload transmitted over weak 2G signals.",
-      "relayTitle": "Nearby relay",
-      "relayDesc": "Mesh peer transmission to surrounding vehicles.",
-      "satTitle": "Satellite SOS",
-      "satDesc": "Direct emergency uplink for remote desert routes.",
-      "active": "Active",
-      "roadmap": "Roadmap"
-    },
-    "platform": {
-      "title": "One platform, three views.",
-      "citizenTitle": "Citizen app",
-      "citizenDesc": "Drive mode, crash countdown, helper network alerts.",
-      "citizenTag": "Mobile",
-      "responderTitle": "Responder console",
-      "responderDesc": "Live map, 3D crash reconstruction, triage queue.",
-      "hospitalTitle": "Hospital dashboard",
-      "hospitalDesc": "3D injury body map, patient profile, live vitals, ETA."
+      "prev": "Previous component",
+      "next": "Next component",
+      "loading": "Loading 3D model",
+      "rotate": "Drag to rotate"
     },
     "footer": {
       "byline": "Built for SolveX 3.0 · HIS University",
       "disclaimer": "Simulated blackbox stream."
+    },
+    "crash": {
+      "intro": "An ordinary drive.",
+      "carLabel": "A car driving towards a wall",
+      "toastTitle": "Oh no, you crashed.",
+      "detected": {
+        "title": "Crash detected.",
+        "detail": "Detection scored 0.990 average precision on 24,174 test recordings."
+      },
+      "alert": {
+        "title": "Help is alerted.",
+        "detail": "By data, or by SMS from the box's own SIM when there is no network."
+      },
+      "estimate": {
+        "title": "Injuries estimated.",
+        "detail": "Severity ranking AUC 0.889. Injury regions mean AUC 0.827. Estimates of where to look first."
+      },
+      "hospital": {
+        "title": "The right hospital is ready.",
+        "detail": "Responders and the emergency room see the same picture."
+      },
+      "open": {
+        "hospital": "Open hospital view",
+        "responder": "Open responder view"
+      },
+      "note": "Timing is illustrative. Simulated demo data."
     }
   },
   "hospital": {
@@ -229,7 +208,57 @@
     "roleHospital": "Hospital",
     "ambulance": "Ambulance",
     "route": "Route",
-    "minSec": "min:sec"
+    "minSec": "min:sec",
+    "noVitals": "No vitals yet. Cuff or watch not connected.",
+    "displayHint": "Colored values are a display hint only.",
+    "hr": "Heart rate",
+    "spo2": "SpO₂",
+    "bp": "Blood pressure",
+    "vitalsSource": {
+      "watch": "Smartwatch",
+      "paramedic_cuff": "Paramedic cuff",
+      "manual": "Manual"
+    },
+    "ageSex": "Age / sex",
+    "ageValue": "{age} yrs",
+    "male": "Male",
+    "female": "Female",
+    "bloodType": "Blood type",
+    "chronic": "Chronic diseases",
+    "allergies": "Allergies",
+    "medications": "Medications",
+    "emergencyContact": "Emergency contact",
+    "none": "None",
+    "bloodThinners": "Blood thinners",
+    "pregnant": "Pregnant",
+    "whereToLook": "Where to look first",
+    "m4Estimate": "M4 estimate",
+    "patientFile": "Patient file",
+    "department": "Emergency department",
+    "incomingTitle": "Incoming patients",
+    "openTwin": "Open digital twin",
+    "backToRecord": "Back to record",
+    "viewOnBody": "View on body",
+    "alertsTitle": "Before treatment",
+    "allergyTo": "Allergy:",
+    "crashTitle": "Crash mechanism",
+    "noCrashData": "No telemetry. SMS report only.",
+    "speedBefore": "Speed before",
+    "deltaV": "Delta-V",
+    "impact": "Impact",
+    "rollover": "Rollover",
+    "belt": "Seat belt",
+    "airbag": "Airbag",
+    "yes": "Yes",
+    "no": "No",
+    "unknown": "Unknown",
+    "timelineTitle": "Timeline",
+    "impactSide": {
+      "front": "Front",
+      "right": "Right side",
+      "rear": "Rear",
+      "left": "Left side"
+    }
   },
   "responder": {
     "title": "Responder View",
@@ -278,7 +307,98 @@
     "timelineTitle": "Incident Timeline",
     "smsFeedTitle": "SMS Radio & Fallback Feed",
     "helpersTitle": "Nearby First Responders",
-    "recommended": "Recommended"
+    "recommended": "Recommended",
+    "smsOnly": "SMS only, no telemetry. Position and severity come from the message.",
+    "offlineBanner": "Network off. SMS mode: blackbox telemetry unreachable.",
+    "phoneTriage": "Phone triage estimate",
+    "details": "Timeline, SMS, helpers, hospitals",
+    "yellowLine": "Ligne jaune: {count} drivers told to clear the way",
+    "callVolunteer": "Call",
+    "volunteerCalling": "Calling",
+    "volunteerOnWay": "On the way",
+    "kind": {
+      "helper_medic": "Medic",
+      "helper_first_aider": "First aider",
+      "volunteer": "Volunteer",
+      "staff": "Staff"
+    },
+    "origin": {
+      "blackbox": "Blackbox",
+      "phone": "Phone call",
+      "zone": "No-coverage watch"
+    },
+    "call": {
+      "open": "New call",
+      "title": "New incident from a phone call",
+      "submit": "Log incident",
+      "cancel": "Cancel",
+      "location": "Location",
+      "locationHint": "Road, km, direction",
+      "victims": "Victims",
+      "yes": "Yes",
+      "no": "No",
+      "note": "The answers give a first severity estimate. Simulated.",
+      "questions": {
+        "conscious": "Is the victim conscious?",
+        "breathing": "Is the victim breathing?",
+        "bleeding": "Heavy bleeding?",
+        "trapped": "Trapped in the vehicle?"
+      }
+    },
+    "zone": {
+      "headingTitle": "{driver} is heading into a no-coverage zone",
+      "headingText": "On {road}, expected back by {backBy}. Once the signal goes, nothing reaches us.",
+      "overdueTitle": "{driver} is not back",
+      "overdueText": "Expected by {backBy}. Last seen at {lastSeen}, at the zone entrance. Emergency contact and Gendarmerie are being warned.",
+      "warn": "Warn them not to go",
+      "warned": "Warned not to go",
+      "noHelp": "Say help can't reach them",
+      "toldNoHelp": "Told help can't reach them",
+      "keepWatching": "OK, keep watching",
+      "gotIt": "Got it",
+      "note": "Timing is compressed. Simulated demo data.",
+      "simulate": "Driver heads into no-coverage zone"
+    },
+    "workspace": {
+      "title": "Dispatch",
+      "available": "{count} ambulances free",
+      "victims": "{count, plural, one {# victim} other {# victims}}",
+      "victimsTitle": "Victims",
+      "victim": "Victim",
+      "severity": "Severity",
+      "triage": "Triage",
+      "destination": "Destination",
+      "digitalTwin": "Digital twin",
+      "triageColor": {
+        "green": "Green: minor",
+        "yellow": "Yellow: delayed",
+        "red": "Red: immediate",
+        "black": "Black: deceased"
+      },
+      "ambulanceTitle": "Ambulance",
+      "noAmbulance": "No ambulance assigned yet.",
+      "unit": "Unit",
+      "etaScene": "ETA to scene",
+      "etaHospital": "ETA to hospital",
+      "contactsTitle": "Calls",
+      "callDriver": "Call the driver",
+      "callContact": "Call the emergency contact",
+      "callNote": "Simulated: there is no phone line yet.",
+      "noHelpers": "No helpers in range. Widen the radius with Call for help.",
+      "confirmHelper": "Confirm helper",
+      "cardsSent": "First-aid cards sent",
+      "noTelemetry": "No telemetry for this incident.",
+      "expandMap": "Expand map",
+      "replay3d": "3D replay",
+      "helpersOnWay": "Helpers on way",
+      "worstVictim": "most severe victim",
+      "progress": "Mission progress",
+      "callDriverShort": "Driver",
+      "callContactShort": "Emergency contact",
+      "widen": "Widen radius",
+      "cardsSentShort": "Cards sent",
+      "confirmHelperShort": "Confirm"
+    }
   },
   "severity": {
     "low": "Low",

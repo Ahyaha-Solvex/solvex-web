@@ -3,10 +3,7 @@ import { LandingNav } from '@/components/landing/LandingNav';
 import { BrandMorph } from '@/components/landing/BrandMorph';
 import { Hero } from '@/components/landing/Hero';
 import { BlackboxSection } from '@/components/landing/BlackboxSection';
-import { Chain } from '@/components/landing/Chain';
-import { Stats } from '@/components/landing/Stats';
-import { Resilience } from '@/components/landing/Resilience';
-import { Platform } from '@/components/landing/Platform';
+import { CrashStory } from '@/components/landing/CrashStory';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export default async function LandingPage({
@@ -24,10 +21,7 @@ export default async function LandingPage({
       <main className="flex-1">
         <Hero />
         <BlackboxSection />
-        <Chain />
-        <Stats />
-        <Resilience />
-        <Platform />
+        <CrashStory />
       </main>
       <LandingFooter />
     </div>

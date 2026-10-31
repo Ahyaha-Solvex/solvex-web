@@ -1,5 +1,5 @@
 import { setRequestLocale } from 'next-intl/server';
-import { ResponderDashboard } from '@/components/responder/ResponderDashboard';
+import { ResponderApp } from '@/components/responder/ResponderApp';
 
 export default async function ResponderPage({
   params,
@@ -9,5 +9,5 @@ export default async function ResponderPage({
   const { locale } = await params;
   setRequestLocale(locale);
 
-  return <ResponderDashboard />;
+  return <ResponderApp />;
 }

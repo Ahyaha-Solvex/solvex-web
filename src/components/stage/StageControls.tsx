@@ -57,7 +57,7 @@ export function StageControls({
       <div className="flex items-end justify-between w-full pointer-events-auto">
         {showCaption && (
           <div className="text-[12px] text-muted italic max-w-sm bg-surface/75 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-border">
-            Estimate of where to look first — not a diagnosis.
+            Estimate of where to look first.
           </div>
         )}
 

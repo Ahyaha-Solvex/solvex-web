@@ -1,669 +1,467 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import {
-  Card,
-  Tabs,
-  Steps,
-  Descriptions,
-  Tag,
-  Alert,
-  Statistic,
-  Button,
-  Segmented,
-  Tooltip,
-  notification,
-} from 'antd';
-import {
-  CarOutlined,
-  ClockCircleOutlined,
-  AlertOutlined,
-  MedicineBoxOutlined,
-  PhoneOutlined,
-  InfoCircleOutlined,
-  ReloadOutlined,
-  HeartOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import { useTranslations, useLocale } from 'next-intl';
+import { Alert, Button, Descriptions, Drawer, Segmented, Tag, Tooltip, notification } from 'antd';
+import { ArrowLeftOutlined, FileTextOutlined, InfoCircleOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { useIncidentStore } from '@/lib/stores/incidentStore';
 import { useUiStore } from '@/lib/stores/uiStore';
-import type { BodyRegion, Occupant, M4Level, LifecycleStatus } from '@/lib/data/types';
+import type { BodyRegion, LifecycleStatus, M3Level, M4Level, Occupant, Vitals } from '@/lib/data/types';
+import type { RegionPoints } from '@/components/stage/Body3D';
 
 import { SimBadge } from '@/components/app/SimBadge';
-import { SeverityTag } from '@/components/app/SeverityTag';
-import { RegionRow } from '@/components/app/RegionRow';
-import { RegionLegend } from '@/components/app/RegionLegend';
-import { VitalsCard } from '@/components/app/VitalsCard';
 import { PrepChecklist } from '@/components/app/PrepChecklist';
 import { EmptyState } from '@/components/app/EmptyState';
-import { ScenarioPanel } from '@/components/app/ScenarioPanel';
 import { LangSwitcher } from '@/components/ui/LangSwitcher';
-import { StageFrame } from '@/components/stage/StageFrame';
 
-// Dynamically import Body3D with ssr: false per Rule 11
-const Body3D = dynamic(() => import('@/components/stage/Body3D'), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full h-full flex items-center justify-center text-muted font-mono text-xs">
-      Loading 3D Body Canvas...
+const Body3D = dynamic(() => import('@/components/stage/Body3D'), { ssr: false });
+
+const REGIONS: BodyRegion[] = ['head', 'face', 'spine_neck', 'thorax', 'abdomen', 'arms', 'legs'];
+const LEVEL_RANK: Record<M4Level, number> = { likely: 3, check: 2, unlikely: 1 };
+const LEVEL_COLOR: Record<M4Level, string> = {
+  likely: 'var(--reg-likely)',
+  check: 'var(--reg-check)',
+  unlikely: 'var(--reg-unlikely)',
+};
+const SEVERITY_COLOR: Record<M3Level, string> = {
+  low: 'var(--sev-low)',
+  medium: 'var(--sev-medium)',
+  high: 'var(--sev-high)',
+  extreme: 'var(--sev-extreme)',
+};
+const LIFECYCLE: LifecycleStatus[] = ['detected', 'dispatched', 'on_scene', 'transporting', 'at_hospital'];
+const LEADER_ELBOW = 20;
+const DEFAULT_ETA_S = 420;
+
+function useCountdown(seconds: number) {
+  const [left, setLeft] = useState(seconds);
+  useEffect(() => {
+    setLeft(seconds);
+    const timer = setInterval(() => setLeft((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(timer);
+  }, [seconds]);
+  return left;
+}
+
+function Trace({ data, alarm }: { data: number[]; alarm: boolean }) {
+  if (data.length < 2) return null;
+  const min = Math.min(...data);
+  const range = Math.max(...data) - min || 1;
+  const points = data
+    .map((v, i) => `${((i / (data.length - 1)) * 100).toFixed(1)},${(26 - ((v - min) / range) * 24).toFixed(1)}`)
+    .join(' ');
+  return (
+    <svg viewBox="0 0 100 28" preserveAspectRatio="none" className="w-20 h-7" aria-hidden="true">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={alarm ? 'var(--sev-high)' : 'var(--brand)'}
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+function Vital({ label, value, unit, alarm, trace }: { label: string; value: string; unit: string; alarm: boolean; trace?: number[] }) {
+  return (
+    <div className="flex items-end gap-3">
+      <div>
+        <div className="text-xs font-medium text-muted">{label}</div>
+        <div className="flex items-baseline gap-1">
+          <span className={`font-mono text-3xl font-bold tabular-nums ${alarm ? 'text-sev-high' : 'text-ink'}`}>{value}</span>
+          <span className="text-xs text-muted">{unit}</span>
+        </div>
+      </div>
+      {trace && <Trace data={trace} alarm={alarm} />}
     </div>
-  ),
-});
+  );
+}
 
-export function HospitalDashboard() {
+function VitalsStrip({ vitals }: { vitals?: Vitals }) {
+  const t = useTranslations('hospital');
+  if (!vitals) return <p className="text-sm text-muted">{t('noVitals')}</p>;
+  const history = vitals.history ?? [];
+  const series = (key: 'hr' | 'spo2') => history.flatMap((p) => (p[key] === undefined ? [] : [p[key] as number]));
+  const { hr, spo2, bpSys, bpDia } = vitals;
+  const hrAlarm = hr !== undefined && (hr < 50 || hr > 120);
+  const spo2Alarm = spo2 !== undefined && spo2 < 92;
+  const bpAlarm = bpSys !== undefined && bpSys < 90;
+
+  return (
+    <div className="flex items-end gap-8" title={t('displayHint')}>
+      <Vital label={t('hr')} value={hr === undefined ? '--' : String(hr)} unit="bpm" alarm={hrAlarm} trace={series('hr')} />
+      <Vital label={t('spo2')} value={spo2 === undefined ? '--' : String(spo2)} unit="%" alarm={spo2Alarm} trace={series('spo2')} />
+      <Vital label={t('bp')} value={bpSys === undefined ? '--' : `${bpSys}/${bpDia ?? '--'}`} unit="mmHg" alarm={bpAlarm} />
+      <span className="pb-1 text-xs text-muted">{t(`vitalsSource.${vitals.source}`)}</span>
+    </div>
+  );
+}
+
+function PatientFile({ occupant }: { occupant: Occupant }) {
+  const t = useTranslations('hospital');
+  const { profile } = occupant;
+  const list = (items?: string[]) => (items?.length ? items.join(', ') : t('none'));
+  return (
+    <Descriptions size="small" column={1} bordered>
+      <Descriptions.Item label={t('ageSex')}>
+        {t('ageValue', { age: profile.ageYears })} · {t(profile.sex === 'm' ? 'male' : 'female')}
+      </Descriptions.Item>
+      <Descriptions.Item label={t('bloodType')}>{profile.bloodType}</Descriptions.Item>
+      <Descriptions.Item label={t('chronic')}>{list(profile.chronicDiseases)}</Descriptions.Item>
+      <Descriptions.Item label={t('allergies')}>{list(profile.allergies)}</Descriptions.Item>
+      <Descriptions.Item label={t('medications')}>{list(profile.medications)}</Descriptions.Item>
+      {profile.emergencyContact && (
+        <Descriptions.Item label={t('emergencyContact')}>
+          {profile.emergencyContact.label}{' '}
+          <span className="font-mono" dir="ltr">{profile.emergencyContact.phone}</span>
+        </Descriptions.Item>
+      )}
+    </Descriptions>
+  );
+}
+
+export interface HospitalDashboardProps {
+  incidentId?: string;
+  occupantId?: string;
+  onBack?: () => void;
+}
+
+export function HospitalDashboard({ incidentId, occupantId: initialOccupant, onBack }: HospitalDashboardProps = {}) {
   const t = useTranslations('hospital');
   const tCommon = useTranslations('common');
   const tStatus = useTranslations('status');
+  const tRegions = useTranslations('regions');
+  const tSeverity = useTranslations('severity');
   const locale = useLocale();
   const router = useRouter();
+  const rtl = locale === 'ar';
 
   const { incidents, activeIncidentId, online } = useIncidentStore();
-  const { hoveredRegion, selectedRegion, setHoveredRegion, setSelectedRegion, setScenarioDrawerOpen } =
-    useUiStore();
+  const { hoveredRegion, selectedRegion, setHoveredRegion, setSelectedRegion, setScenarioDrawerOpen } = useUiStore();
+  const shownId = incidentId ?? activeIncidentId;
+  const incident = shownId ? incidents[shownId] : null;
 
-  const activeIncident = activeIncidentId ? incidents[activeIncidentId] : null;
-
-  // Selected occupant tab state
-  const [selectedOccupantId, setSelectedOccupantId] = useState<string | null>(null);
+  const [occupantId, setOccupantId] = useState<string | null>(initialOccupant ?? null);
   const [viewMode, setViewMode] = useState<'front' | 'back' | 'free'>('front');
   const [resetNonce, setResetNonce] = useState(0);
+  const [fileOpen, setFileOpen] = useState(false);
 
-  // Track previous incident to trigger notification on new arrival
-  const prevIncidentIdRef = useRef<string | null>(null);
-  const [pulseTabs, setPulseTabs] = useState(false);
+  const occupant = incident?.occupants.find((o) => o.id === occupantId) ?? incident?.occupants[0] ?? null;
 
-  // Sync active occupant when incident changes
+  const previousIncident = useRef<string | null>(null);
   useEffect(() => {
-    if (activeIncident && activeIncident.occupants.length > 0) {
-      if (!selectedOccupantId || !activeIncident.occupants.find((o) => o.id === selectedOccupantId)) {
-        setSelectedOccupantId(activeIncident.occupants[0].id);
-      }
-    }
-  }, [activeIncident, selectedOccupantId]);
-
-  // Check for new incident arrival while page is open (SPEC_HOSPITAL line 32)
-  useEffect(() => {
-    if (activeIncidentId && prevIncidentIdRef.current && prevIncidentIdRef.current !== activeIncidentId) {
-      setPulseTabs(true);
+    if (activeIncidentId && previousIncident.current && previousIncident.current !== activeIncidentId) {
       notification.info({
         message: t('newPatientNotification'),
         description: t('newPatientDesc'),
-        placement: locale === 'ar' ? 'topLeft' : 'topRight',
-        duration: 4.5,
+        placement: rtl ? 'topLeft' : 'topRight',
       });
-      const timer = setTimeout(() => setPulseTabs(false), 2000);
-      return () => clearTimeout(timer);
     }
-    prevIncidentIdRef.current = activeIncidentId;
-  }, [activeIncidentId, t, locale]);
+    previousIncident.current = activeIncidentId;
+  }, [activeIncidentId, t, rtl]);
 
-  const activeOccupant: Occupant | null = useMemo(() => {
-    if (!activeIncident || activeIncident.occupants.length === 0) return null;
-    return activeIncident.occupants.find((o) => o.id === selectedOccupantId) ?? activeIncident.occupants[0];
-  }, [activeIncident, selectedOccupantId]);
-
-  // Order regions: likely first, then check, then unlikely; tie-break by probability desc
-  const sortedRegions = useMemo(() => {
-    if (!activeOccupant) return [];
-    const allRegions: BodyRegion[] = [
-      'head',
-      'face',
-      'spine_neck',
-      'thorax',
-      'abdomen',
-      'arms',
-      'legs',
-    ];
-
-    const levelRank: Record<M4Level, number> = {
-      likely: 3,
-      check: 2,
-      unlikely: 1,
-    };
-
-    return allRegions
-      .map((region) => {
-        const data = activeOccupant.m4[region] ?? { level: 'unlikely', probability: 0 };
-        return {
-          region,
-          level: data.level,
-          probability: data.probability,
-        };
-      })
-      .sort((a, b) => {
-        if (levelRank[b.level] !== levelRank[a.level]) {
-          return levelRank[b.level] - levelRank[a.level];
-        }
-        return b.probability - a.probability;
-      });
-  }, [activeOccupant]);
-
-  // Lifecycle steps calculation
-  const lifecycleStepIndex = useMemo(() => {
-    if (!activeIncident) return 0;
-    const map: Record<LifecycleStatus, number> = {
-      detected: 0,
-      dispatched: 1,
-      on_scene: 2,
-      transporting: 3,
-      at_hospital: 4,
-      closed: 5,
-    };
-    return map[activeIncident.lifecycle] ?? 0;
-  }, [activeIncident]);
-
-  // Receiving hospital information
-  const receivingHospital = useMemo(() => {
-    if (!activeIncident || !activeIncident.hospitalOptions?.length) return null;
-    const match = activeIncident.hospitalOptions.find(
-      (h) => h.id === activeIncident.dispatch?.hospitalId
+  const ranked = useMemo(() => {
+    if (!occupant) return [];
+    return REGIONS.map((region) => ({ region, ...(occupant.m4[region] ?? { level: 'unlikely' as M4Level, probability: 0 }) })).sort(
+      (a, b) => LEVEL_RANK[b.level] - LEVEL_RANK[a.level] || b.probability - a.probability
     );
-    return match || activeIncident.hospitalOptions[0];
-  }, [activeIncident]);
+  }, [occupant]);
+  const flagged = ranked.filter((r) => r.level !== 'unlikely');
+  const quiet = ranked.filter((r) => r.level === 'unlikely');
 
-  const handleRoleChange = (role: string) => {
-    if (role === 'responder') {
-      router.push(`/${locale}/responder`);
-    }
-  };
+  const hospital =
+    incident?.hospitalOptions?.find((h) => h.id === incident.dispatch?.hospitalId) ?? incident?.hospitalOptions?.[0] ?? null;
 
-  const handleResetView = () => {
+  const left = useCountdown(incident?.dispatch?.etaToHospitalS ?? DEFAULT_ETA_S);
+  const minutes = String(Math.floor(left / 60)).padStart(2, '0');
+  const seconds = String(left % 60).padStart(2, '0');
+  const stepIndex = incident ? LIFECYCLE.indexOf(incident.lifecycle) : -1;
+
+  // The lines are written straight to the DOM: they follow the camera on every frame.
+  const stage = useRef<HTMLDivElement>(null);
+  const rows = useRef<Partial<Record<BodyRegion, HTMLElement | null>>>({});
+  const leaders = useRef<Partial<Record<BodyRegion, SVGPathElement | null>>>({});
+  const handleProject = useCallback(
+    (points: RegionPoints) => {
+      const box = stage.current?.getBoundingClientRect();
+      if (!box) return;
+      for (const region of REGIONS) {
+        const row = rows.current[region];
+        const line = leaders.current[region];
+        const point = points[region];
+        if (!row || !line || !point) continue;
+        const rect = row.getBoundingClientRect();
+        const x = (rtl ? rect.right : rect.left) - box.left;
+        const y = rect.top + rect.height / 2 - box.top;
+        const elbow = x + (rtl ? LEADER_ELBOW : -LEADER_ELBOW);
+        line.setAttribute('d', `M${x} ${y} H${elbow} L${point[0]} ${point[1]}`);
+      }
+    },
+    [rtl]
+  );
+
+  const resetView = () => {
     setViewMode('front');
     setSelectedRegion(null);
     setResetNonce((n) => n + 1);
   };
 
   return (
-    <div className="min-h-screen bg-surface-2 flex flex-col text-ink">
-      {/* 1. TOP BAR (56px) - Rule 6: brand left, role switch, LangSwitcher, SimBadge */}
-      <header className="h-14 bg-surface border-b border-border px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
-        {/* Brand Left */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-full bg-brand animate-pulse" />
-            <span className="font-bold text-base tracking-tight text-ink">
-              {tCommon('brand')}
-            </span>
-          </div>
-          <Tag color="cyan" className="m-0 font-mono text-[10px] uppercase font-bold tracking-wider">
-            {t('roleHospital')}
-          </Tag>
-        </div>
-
-        {/* Center: Role Switcher (Ant Segmented) */}
-        <div className="hidden sm:block">
-          <Segmented
-            value="hospital"
-            onChange={(val) => handleRoleChange(val as string)}
-            options={[
-              { label: t('roleResponder'), value: 'responder' },
-              { label: t('roleHospital'), value: 'hospital' },
-            ]}
-            className="bg-surface-elevated border border-border shadow-xs text-xs font-medium"
-          />
-        </div>
-
-        {/* Right: Language Select & SimBadge */}
+    <div className="h-screen overflow-hidden bg-bg flex flex-col text-ink">
+      <header className="h-16 shrink-0 px-6 flex items-center justify-between z-30">
+        {onBack ? (
+          <Button
+            type="primary"
+            size="large"
+            icon={<ArrowLeftOutlined className="rtl:rotate-180" />}
+            onClick={onBack}
+          >
+            {t('backToRecord')}
+          </Button>
+        ) : (
+          <span className="font-bold text-base tracking-tight">{tCommon('brand')}</span>
+        )}
+        {onBack ? (
+          <span className="font-semibold text-sm">{occupant?.label}</span>
+        ) : (
+        <Segmented
+          value="hospital"
+          onChange={(role) => role === 'responder' && router.push(`/${locale}/responder`)}
+          options={[
+            { label: t('roleResponder'), value: 'responder' },
+            { label: t('roleHospital'), value: 'hospital' },
+          ]}
+        />
+        )}
         <div className="flex items-center gap-3">
           <LangSwitcher />
           <SimBadge />
         </div>
       </header>
 
-      {/* 2. OFFLINE BANNER (SPEC_HOSPITAL line 32) */}
-      {!online && (
-        <Alert
-          type="warning"
-          banner
-          showIcon
-          message={
-            <span className="text-xs font-semibold">
-              {t('offlineBanner')}
-            </span>
-          }
-          className="border-b border-border shadow-xs"
-        />
-      )}
+      {!online && <Alert type="warning" banner showIcon message={t('offlineBanner')} />}
 
-      {/* 3. PATIENT TAB STRIP (SPEC_HOSPITAL line 6) */}
-      {activeIncident && activeIncident.occupants.length > 0 && (
-        <div className={`bg-surface border-b border-border px-4 sm:px-6 py-1 ${pulseTabs ? 'animate-pulse' : ''}`}>
-          <Tabs
-            type="card"
-            size="small"
-            activeKey={selectedOccupantId ?? activeIncident.occupants[0].id}
-            onChange={(key) => {
-              setSelectedOccupantId(key);
-              setSelectedRegion(null);
-            }}
-            items={activeIncident.occupants.map((occ) => {
-              const triageBg =
-                occ.triageColor === 'red'
-                  ? 'bg-sev-extreme'
-                  : occ.triageColor === 'yellow'
-                  ? 'bg-sev-medium'
-                  : occ.triageColor === 'black'
-                  ? 'bg-black'
-                  : 'bg-brand';
-
-              return {
-                key: occ.id,
-                label: (
-                  <span className="flex items-center gap-2 text-xs font-medium">
-                    <span className={`w-2 h-2 rounded-full ${triageBg}`} />
-                    <span>{occ.label}</span>
-                    <span className="font-mono text-[10px] text-muted ms-1">
-                      {occ.profile.bloodType}
-                    </span>
-                  </span>
-                ),
-              };
-            })}
-            className="patient-tabs mb-0"
+      {!incident || !occupant ? (
+        <main className="flex-1 flex items-center justify-center">
+          <EmptyState
+            variant="patients"
+            title={t('emptyTitle')}
+            description={t('emptyDesc')}
+            action={
+              <Button type="primary" onClick={() => setScenarioDrawerOpen(true)}>
+                {t('scenarioHint')}
+              </Button>
+            }
           />
-        </div>
-      )}
+        </main>
+      ) : (
+        <main ref={stage} className="relative flex-1 min-h-0 overflow-hidden">
+          {/* The countdown is the page: the body stands in front of it */}
+          <div
+            dir="ltr"
+            role="timer"
+            aria-label={t('etaTitle')}
+            className="absolute inset-x-0 top-6 flex justify-center font-mono font-bold leading-none tracking-tighter tabular-nums select-none pointer-events-none"
+            style={{ fontSize: 'var(--type-eta)', color: SEVERITY_COLOR[occupant.m3.level] }}
+          >
+            {minutes}
+            <span className="opacity-20">:</span>
+            {seconds}
+          </div>
 
-      {/* 4. MAIN CONTENT AREA */}
-      <main className="flex-1 p-4 sm:p-6 max-w-[1720px] w-full mx-auto">
-        {!activeIncident ? (
-          /* Full Page Empty State when No Incident */
-          <div className="py-16">
-            <EmptyState
-              variant="patients"
-              title={t('emptyTitle')}
-              description={t('emptyDesc')}
-              action={
-                <Button
-                  type="primary"
-                  className="bg-brand text-white"
-                  onClick={() => setScenarioDrawerOpen(true)}
-                >
-                  {t('scenarioHint')}
-                </Button>
-              }
+          <div className="absolute inset-0">
+            <Body3D
+              key={resetNonce}
+              occupant={occupant}
+              viewMode={viewMode}
+              onReset={resetView}
+              onProject={handleProject}
+              projectSide={rtl ? 'l' : 'r'}
             />
           </div>
-        ) : (
-          /* 3-COLUMN LAYOUT (≥1280): Left rail 320 · Center stage · Right rail 392 */
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-            {/* ----------------- LEFT RAIL (320px / 3 cols) ----------------- */}
-            <div className="xl:col-span-3 space-y-4">
-              {/* Card 1: Arrival & ETA */}
-              <Card
-                size="small"
-                title={
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="flex items-center gap-1.5 uppercase tracking-wider text-muted">
-                      <ClockCircleOutlined className="text-brand" />
-                      <span>{t('arrival')}</span>
-                    </span>
-                    {activeIncident.dispatch?.ambulanceId && (
-                      <Tag color="#006233" className="m-0 font-mono text-xs">
-                        <CarOutlined className="me-1" />
-                        {activeIncident.dispatch.ambulanceId}
-                      </Tag>
-                    )}
-                  </div>
-                }
-                className="bg-surface border-border shadow-xs"
-              >
-                <div className="space-y-4">
-                  {/* Big ETA Countdown in mm:ss */}
-                  <div className="p-3 bg-surface-elevated rounded-xl border border-border text-center">
-                    <div className="text-3xl sm:text-4xl font-mono font-bold tracking-tight tabular-nums text-ink">
-                      {(() => {
-                        const s = activeIncident.dispatch?.etaToHospitalS ?? 420;
-                        const min = Math.floor(s / 60);
-                        const sec = s % 60;
-                        return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-                      })()}
-                    </div>
-                    <span className="text-xs text-muted font-medium">{t('minSec')}</span>
-                  </div>
 
-                  {/* Origin Road Label */}
-                  {activeIncident.position?.roadLabel && (
-                    <div className="text-xs text-muted border-t border-border pt-2.5">
-                      {t('from')}:{' '}
-                      <strong className="text-ink font-medium">
-                        {activeIncident.position.roadLabel}
-                      </strong>
-                    </div>
-                  )}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true">
+            {flagged.map(({ region, level }) => (
+              <path
+                key={region}
+                ref={(node) => {
+                  leaders.current[region] = node;
+                }}
+                fill="none"
+                stroke={LEVEL_COLOR[level]}
+                strokeWidth={hoveredRegion === region || selectedRegion === region ? 2 : 1}
+                strokeOpacity={level === 'likely' || hoveredRegion === region || selectedRegion === region ? 1 : 0}
+              />
+            ))}
+          </svg>
 
-                  {/* Small Lifecycle Steps */}
-                  <div className="border-t border-border pt-3">
-                    <Steps
-                      size="small"
-                      direction="vertical"
-                      current={lifecycleStepIndex}
-                      items={[
-                        { title: tStatus('detected') },
-                        { title: tStatus('dispatched') },
-                        { title: tStatus('on_scene') },
-                        { title: tStatus('transporting') },
-                        { title: tStatus('at_hospital') },
-                      ]}
-                      className="text-xs"
-                    />
-                  </div>
-                </div>
-              </Card>
+          {/* Arrival line and journey */}
+          <div className="absolute top-0 inset-x-6 flex items-center justify-between gap-6 text-xs font-medium text-muted">
+            <span className="flex items-center gap-2 min-w-0">
+              <span className="text-ink font-semibold">{t('arrival')}</span>
+              {incident.dispatch?.ambulanceId && <span className="font-mono">{incident.dispatch.ambulanceId}</span>}
+              <span className="truncate">{incident.position?.roadLabel}</span>
+            </span>
+            <ol className="flex items-center gap-3" aria-label={t('arrival')}>
+              {LIFECYCLE.map((status, i) => (
+                <li key={status} className={`flex items-center gap-1.5 ${i <= stepIndex ? 'text-ink' : ''}`}>
+                  <span className={`w-2 h-2 rounded-full ${i <= stepIndex ? 'bg-brand' : 'bg-border-strong'}`} />
+                  {i === stepIndex && tStatus(status)}
+                </li>
+              ))}
+            </ol>
+          </div>
 
-              {/* Card 2: Patient Demographic & Medical Profile */}
-              {activeOccupant && (
-                <Card
-                  size="small"
-                  title={
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="flex items-center gap-1.5">
-                        <UserOutlined className="text-brand" />
-                        <span>{activeOccupant.label}</span>
-                      </span>
-                      <Tag color="magenta" className="m-0 font-mono font-bold text-xs">
-                        {activeOccupant.profile.bloodType}
-                      </Tag>
-                    </div>
-                  }
-                  className="bg-surface border-border shadow-xs"
-                >
-                  <div className="space-y-3">
-                    {/* Alert Tags: Blood thinners / Pregnant */}
-                    {(activeOccupant.profile.onBloodThinners || activeOccupant.profile.pregnant) && (
-                      <div className="flex flex-wrap gap-1.5 pb-2 border-b border-border">
-                        {activeOccupant.profile.onBloodThinners && (
-                          <Tag color="error" className="m-0 font-semibold flex items-center gap-1 text-xs">
-                            <AlertOutlined />
-                            Blood thinners
-                          </Tag>
-                        )}
-                        {activeOccupant.profile.pregnant && (
-                          <Tag color="purple" className="m-0 font-semibold flex items-center gap-1 text-xs">
-                            <MedicineBoxOutlined />
-                            Pregnant
-                          </Tag>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Descriptions table (1 col, small) */}
-                    <Descriptions
-                      size="small"
-                      column={1}
-                      bordered
-                      className="bg-surface text-xs"
-                      styles={{
-                        label: { width: '40%', color: 'var(--muted)', fontWeight: 500 },
-                        content: { color: 'var(--ink)' },
-                      }}
-                    >
-                      <Descriptions.Item label="Age / Sex">
-                        {activeOccupant.profile.ageYears} yrs ·{' '}
-                        {activeOccupant.profile.sex === 'm' ? 'Male' : 'Female'}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Blood Type">
-                        <span className="font-mono font-bold text-sev-extreme">
-                          {activeOccupant.profile.bloodType}
-                        </span>
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Chronic Diseases">
-                        {activeOccupant.profile.chronicDiseases?.length
-                          ? activeOccupant.profile.chronicDiseases.join(', ')
-                          : 'None'}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Allergies">
-                        {activeOccupant.profile.allergies?.length ? (
-                          <span className="text-sev-high font-medium">
-                            {activeOccupant.profile.allergies.join(', ')}
-                          </span>
-                        ) : (
-                          'None'
-                        )}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Medications">
-                        {activeOccupant.profile.medications?.length
-                          ? activeOccupant.profile.medications.join(', ')
-                          : 'None'}
-                      </Descriptions.Item>
-                      {activeOccupant.profile.emergencyContact && (
-                        <Descriptions.Item label="Emergency Contact">
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <PhoneOutlined className="text-brand" />
-                            <span>{activeOccupant.profile.emergencyContact.label}</span>
-                            <span className="font-mono text-xs text-muted ms-1" dir="ltr">
-                              {activeOccupant.profile.emergencyContact.phone}
-                            </span>
-                          </div>
-                        </Descriptions.Item>
-                      )}
-                    </Descriptions>
-                  </div>
-                </Card>
-              )}
-
-              {/* Card 3: Severity & Ranking Score */}
-              {activeOccupant && (
-                <Card
-                  size="small"
-                  title={
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                      {t('severity')}
-                    </span>
-                  }
-                  className="bg-surface border-border shadow-xs"
-                >
-                  <div className="space-y-3">
-                    <SeverityTag
-                      severity={activeOccupant.m3.level}
-                      rankingScore={activeOccupant.m3.probability}
-                      escalatedBy={activeOccupant.m3.escalatedBy}
-                      size="large"
-                    />
-
-                    {/* Ranking score caption */}
-                    <div className="text-xs text-muted flex items-center justify-between border-t border-border pt-2">
-                      <span>{t('rankingScore')}:</span>
-                      <strong className="font-mono text-ink">
-                        {Math.round(activeOccupant.m3.probability * 100)}%
-                      </strong>
-                    </div>
-
-                    {/* EscalatedBy line */}
-                    {activeOccupant.m3.escalatedBy && activeOccupant.m3.escalatedBy.length > 0 && (
-                      <div className="text-[11px] text-sev-high bg-sev-high/10 p-2 rounded border border-sev-high/20">
-                        <strong>{t('raisedBy')}:</strong> {activeOccupant.m3.escalatedBy.join(', ')}
-                      </div>
-                    )}
-
-                    {/* Medical disclaimer */}
-                    <div className="text-[11px] text-muted italic border-t border-border pt-2">
-                      {tCommon('medicalDisclaimer')}
-                    </div>
-                  </div>
-                </Card>
-              )}
+          {/* Who is coming */}
+          <section className="absolute bottom-28 start-6 w-[clamp(240px,23vw,340px)]">
+            {incident.occupants.length > 1 && (
+              <div className="flex gap-1 mb-3" role="tablist">
+                {incident.occupants.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={o.id === occupant.id}
+                    onClick={() => {
+                      setOccupantId(o.id);
+                      setSelectedRegion(null);
+                    }}
+                    className={`h-8 px-3 rounded-full text-xs font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand ${
+                      o.id === occupant.id ? 'bg-ink text-white' : 'bg-surface-2 text-ink-2'
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex items-baseline gap-3">
+              <span className="text-5xl font-bold tracking-tight" style={{ color: SEVERITY_COLOR[occupant.m3.level] }}>
+                {tSeverity(occupant.m3.level)}
+              </span>
+              <span className="font-mono text-sm text-muted">
+                {t('rankingScore')} {Math.round(occupant.m3.probability * 100)}%
+              </span>
             </div>
-
-            {/* ----------------- CENTER STAGE (5 cols, sticky) ----------------- */}
-            <div className="xl:col-span-5 sticky top-20">
-              <Card
-                className="bg-surface border-border overflow-hidden p-0 shadow-sm"
-                styles={{ body: { padding: 0 } }}
-              >
-                <StageFrame
-                  height="640px"
-                  showGrid={true}
-                  overlay={
-                    <div className="w-full h-full p-4 flex flex-col justify-between pointer-events-none">
-                      {/* Top Overlay Controls: View switcher (start) & M4 Tag (end) */}
-                      <div className="flex items-center justify-between w-full pointer-events-auto">
-                        <Segmented
-                          value={viewMode}
-                          onChange={(val) => setViewMode(val as 'front' | 'back' | 'free')}
-                          options={[
-                            { label: t('viewFront'), value: 'front' },
-                            { label: t('viewBack'), value: 'back' },
-                            { label: t('viewFree'), value: 'free' },
-                          ]}
-                          className="bg-surface/90 backdrop-blur-md border border-border shadow-md text-xs"
-                        />
-
-                        <Tooltip title={t('m4Tooltip')}>
-                          <Tag
-                            color="#006233"
-                            className="m-0 text-xs px-2.5 py-1 font-mono rounded-full border-none shadow-md flex items-center gap-1 cursor-help"
-                          >
-                            <InfoCircleOutlined />
-                            <span>M4 estimate</span>
-                          </Tag>
-                        </Tooltip>
-                      </div>
-
-                      {/* Bottom Overlay Controls: Legend (start), Disclaimer (center), Reset (end) */}
-                      <div className="flex flex-col sm:flex-row items-end sm:items-center justify-between gap-2 w-full pointer-events-auto">
-                        <div className="bg-surface/85 backdrop-blur-md px-3 py-1.5 rounded-lg border border-border shadow-md">
-                          <RegionLegend vertical={false} />
-                        </div>
-
-                        <div className="text-[11px] text-muted italic bg-surface/85 backdrop-blur-md px-2.5 py-1 rounded border border-border hidden md:block">
-                          Estimate of where to look first — not a diagnosis.
-                        </div>
-
-                        <Button
-                          size="small"
-                          icon={<ReloadOutlined />}
-                          onClick={handleResetView}
-                          className="bg-surface/90 backdrop-blur-md border-border shadow-md text-xs"
-                        >
-                          {t('resetView')}
-                        </Button>
-                      </div>
-                    </div>
-                  }
-                >
-                  <Body3D
-                    key={resetNonce}
-                    occupant={activeOccupant}
-                    viewMode={viewMode}
-                    onReset={handleResetView}
-                  />
-                </StageFrame>
-              </Card>
+            {occupant.m3.escalatedBy && occupant.m3.escalatedBy.length > 0 && (
+              <p className="mt-1 text-xs text-sev-high">
+                {t('raisedBy')}: {occupant.m3.escalatedBy.join(', ')}
+              </p>
+            )}
+            <p className="mt-3 text-lg font-semibold">
+              {occupant.label}
+              {occupant.profile.ageYears > 0 &&
+                ` · ${t('ageValue', { age: occupant.profile.ageYears })} · ${t(occupant.profile.sex === 'm' ? 'male' : 'female')}`}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-mono font-bold text-sev-extreme">{occupant.profile.bloodType}</span>
+              {occupant.profile.onBloodThinners && <Tag color="error" className="m-0">{t('bloodThinners')}</Tag>}
+              {occupant.profile.pregnant && <Tag color="purple" className="m-0">{t('pregnant')}</Tag>}
+              {occupant.profile.allergies?.map((a) => <Tag key={a} color="warning" className="m-0">{a}</Tag>)}
             </div>
+          </section>
 
-            {/* ----------------- RIGHT RAIL (392px / 4 cols) ----------------- */}
-            <div className="xl:col-span-4 space-y-4">
-              {/* Card 1: Injury Map (7 RegionRows ordered by level then probability) */}
-              <Card
-                size="small"
-                title={
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="flex items-center gap-1.5 uppercase tracking-wider text-muted">
-                      <HeartOutlined className="text-brand" />
-                      <span>{t('injuryMap')}</span>
-                    </span>
-                    <span className="font-mono text-muted text-[11px]">7 regions</span>
-                  </div>
-                }
-                className="bg-surface border-border shadow-xs"
-              >
-                <div className="space-y-1.5">
-                  {sortedRegions.map(({ region, level, probability }) => (
-                    <RegionRow
-                      key={region}
-                      region={region}
-                      level={level}
-                      probability={probability}
-                      selected={selectedRegion === region}
-                      hovered={hoveredRegion === region}
-                      onSelect={(reg) => {
-                        setSelectedRegion(selectedRegion === reg ? null : reg);
-                      }}
-                      onHover={(reg) => setHoveredRegion(reg)}
-                    />
-                  ))}
-                </div>
-              </Card>
-
-              {/* Card 2: Live Vitals */}
-              {activeOccupant && (
-                <VitalsCard
-                  vitals={activeOccupant.vitals}
-                  loading={false}
-                />
-              )}
-
-              {/* Card 3: Emergency Preparation Checklist */}
-              {activeIncident.prep && activeIncident.prep.length > 0 && (
-                <Card
-                  size="small"
-                  title={
-                    <span className="text-xs font-semibold uppercase tracking-wider text-muted">
-                      {t('prepare')}
-                    </span>
-                  }
-                  className="bg-surface border-border shadow-xs"
-                >
-                  <PrepChecklist items={activeIncident.prep} />
-                </Card>
-              )}
-
-              {/* Card 4: Beds & Specialties */}
-              {receivingHospital && (
-                <Card
-                  size="small"
-                  title={
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="truncate">{receivingHospital.name}</span>
-                      <Tag color="green" className="m-0 text-xs font-mono">
-                        {t('beds')}
-                      </Tag>
-                    </div>
-                  }
-                  className="bg-surface border-border shadow-xs"
-                >
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3 p-3 bg-surface-elevated rounded-lg border border-border">
-                      <Statistic
-                        title={<span className="text-xs text-muted">{t('freeBeds')}</span>}
-                        value={receivingHospital.freeBeds}
-                        valueStyle={{ color: 'var(--brand)', fontWeight: 700 }}
-                      />
-                      <Statistic
-                        title={<span className="text-xs text-muted">{t('etaTitle')}</span>}
-                        value={Math.round(receivingHospital.etaSeconds / 60)}
-                        suffix="min"
-                        valueStyle={{ fontWeight: 700 }}
-                      />
-                    </div>
-
-                    <div>
-                      <span className="text-xs font-semibold text-muted uppercase tracking-wider block mb-1.5">
-                        {t('specialties')}
+          {/* Where to look first */}
+          <section className="absolute bottom-28 end-6 w-[clamp(240px,23vw,340px)]">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm font-semibold">{t('whereToLook')}</h2>
+              <Tooltip title={t('m4Tooltip')}>
+                <span className="flex items-center gap-1 text-xs text-muted cursor-help">
+                  <InfoCircleOutlined />
+                  {t('m4Estimate')}
+                </span>
+              </Tooltip>
+            </div>
+            <ul>
+              {flagged.map(({ region, level, probability }) => (
+                <li key={region}>
+                  <button
+                    type="button"
+                    ref={(node) => {
+                      rows.current[region] = node;
+                    }}
+                    aria-pressed={selectedRegion === region}
+                    onClick={() => setSelectedRegion(selectedRegion === region ? null : region)}
+                    onMouseEnter={() => setHoveredRegion(region)}
+                    onMouseLeave={() => setHoveredRegion(null)}
+                    className={`w-full py-2 text-start border-t border-border-strong focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand ${
+                      selectedRegion === region ? 'bg-surface-2' : ''
+                    }`}
+                  >
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span className="text-xl font-bold tracking-tight">{tRegions(region)}</span>
+                      <span className="text-xs font-semibold" style={{ color: level === 'likely' ? LEVEL_COLOR.likely : 'var(--ink-2)' }}>
+                        {tRegions(level)} <span className="font-mono">{Math.round(probability * 100)}%</span>
                       </span>
-                      <div className="flex flex-wrap gap-1">
-                        {receivingHospital.specialties.map((spec) => (
-                          <Tag key={spec} color="blue" className="text-xs m-0">
-                            {spec}
-                          </Tag>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              )}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {quiet.length > 0 && (
+              <p className="pt-2 border-t border-border-strong text-xs text-muted">
+                {tRegions('unlikely')}: {quiet.map((r) => tRegions(r.region)).join(', ')}
+              </p>
+            )}
+          </section>
+
+          {/* Vitals and controls */}
+          <div className="absolute bottom-0 inset-x-6 h-24 flex items-center justify-between gap-6 pointer-events-none">
+            <div className="pointer-events-auto">
+              <VitalsStrip vitals={occupant.vitals} />
+            </div>
+            <div className="flex items-center gap-2 pe-14 pointer-events-auto">
+              <Segmented
+                value={viewMode}
+                onChange={(mode) => setViewMode(mode as 'front' | 'back' | 'free')}
+                options={[
+                  { label: t('viewFront'), value: 'front' },
+                  { label: t('viewBack'), value: 'back' },
+                  { label: t('viewFree'), value: 'free' },
+                ]}
+              />
+              <Tooltip title={t('resetView')}>
+                <Button aria-label={t('resetView')} icon={<ReloadOutlined />} onClick={resetView} />
+              </Tooltip>
+              <Button type="primary" icon={<FileTextOutlined />} onClick={() => setFileOpen(true)}>
+                {t('patientFile')}
+              </Button>
             </div>
           </div>
-        )}
-      </main>
 
-      {/* Floating Simulation Drawer Shortcut */}
-      <ScenarioPanel />
+          <p className="absolute bottom-1 inset-x-0 text-center text-xs text-muted pointer-events-none">
+            {tCommon('medicalDisclaimer')}
+          </p>
+
+          <Drawer
+            open={fileOpen}
+            onClose={() => setFileOpen(false)}
+            placement={rtl ? 'left' : 'right'}
+            width={440}
+            title={occupant.label}
+          >
+            <div className="space-y-6">
+              <PatientFile occupant={occupant} />
+              {incident.prep?.length > 0 && <PrepChecklist items={incident.prep} />}
+              {hospital && (
+                <section>
+                  <h3 className="text-sm font-semibold">{hospital.name}</h3>
+                  <p className="mt-1 text-sm text-muted">
+                    {t('freeBeds')}: <strong className="text-ink">{hospital.freeBeds}</strong>
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {hospital.specialties.map((s) => <Tag key={s} className="m-0">{s}</Tag>)}
+                  </div>
+                </section>
+              )}
+            </div>
+          </Drawer>
+        </main>
+      )}
     </div>
   );
 }

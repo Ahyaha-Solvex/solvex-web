@@ -4,6 +4,7 @@ node_modules/
 
 # next.js
 .next/
+.next-preview/
 out/
 
 # production
@@ -35,3 +36,6 @@ blender/*.blend1
 # External reference repositories
 external/
 
+
+# Python
+__pycache__/
