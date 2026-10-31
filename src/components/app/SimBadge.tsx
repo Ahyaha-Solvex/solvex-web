@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Tag } from 'antd';
 import { useTranslations } from 'next-intl';
 
 export interface SimBadgeProps {
@@ -9,7 +8,7 @@ export interface SimBadgeProps {
   forceShow?: boolean;
 }
 
-export function SimBadge({ className, forceShow = false }: SimBadgeProps) {
+export function SimBadge({ className = '', forceShow = false }: SimBadgeProps) {
   const t = useTranslations('common');
   const isSim = (process.env.NEXT_PUBLIC_SOURCE ?? 'sim') === 'sim';
 
@@ -19,13 +18,11 @@ export function SimBadge({ className, forceShow = false }: SimBadgeProps) {
   }
 
   return (
-    <Tag
-      color="magenta"
-      className={`font-mono text-[11px] font-medium tracking-tight rounded-full px-2.5 py-0.5 border-none m-0 shadow-sm ${
-        className || ''
-      }`}
+    <span
+      className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-surface-2 border border-border-strong text-ink-2 font-mono text-[11px] font-medium tracking-tight select-none whitespace-nowrap shadow-1 ${className}`}
     >
-      {t('simBadge')}
-    </Tag>
+      <span className="w-1.5 h-1.5 rounded-full bg-brand shrink-0" aria-hidden="true" />
+      <span>{t('simBadge')}</span>
+    </span>
   );
 }

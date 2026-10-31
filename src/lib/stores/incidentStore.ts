@@ -31,13 +31,14 @@ export const useIncidentStore = create<IncidentStoreState>((set, get) => ({
       switch (event.type) {
         case 'incident_upsert': {
           const inc = event.incident;
+          const isNew = !(inc.id in state.incidents);
           return {
             eventLog: nextLog,
             incidents: {
               ...state.incidents,
               [inc.id]: inc,
             },
-            activeIncidentId: state.activeIncidentId ?? inc.id,
+            activeIncidentId: isNew ? inc.id : (state.activeIncidentId ?? inc.id),
           };
         }
 

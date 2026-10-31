@@ -28,8 +28,17 @@ export function TelemetryReadout({
 
   // Speed at current replay frame
   const initialSpeed = crash?.speedBeforeKmh ?? 80;
+  const isHardBraking = (crash?.deltaVKmh ?? 50) < 25 && (crash?.impactDirectionDeg ?? 90) === 0;
   let currentSpeed = initialSpeed;
-  if (currentTimeMs >= impactAtMs) {
+  if (isHardBraking) {
+    const brakeStartMs = impactAtMs - 2200;
+    if (currentTimeMs >= impactAtMs) {
+      currentSpeed = 0;
+    } else if (currentTimeMs > brakeStartMs) {
+      const p = Math.min(1, Math.max(0, (currentTimeMs - brakeStartMs) / 2200));
+      currentSpeed = Math.round(initialSpeed * (1 - p));
+    }
+  } else if (currentTimeMs >= impactAtMs) {
     // Decelerating to 0 after impact
     const postImpactProgress = Math.min((currentTimeMs - impactAtMs) / 1500, 1.0);
     currentSpeed = Math.round(initialSpeed * (1 - postImpactProgress));
@@ -56,88 +65,75 @@ export function TelemetryReadout({
 
   return (
     <div
-      className={`px-3 py-2 rounded-xl bg-[#0B1310]/85 backdrop-blur-md border border-white/10 shadow-lg text-white select-none ${className}`}
+      className={`px-3.5 py-2.5 rounded-lg bg-stage-bg/90 backdrop-blur-md border border-white/12 shadow-2 text-stage-ink select-none ${className}`}
     >
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-4 gap-y-2 text-start">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-x-5 gap-y-2 text-start">
         {/* 1. Speed */}
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-mono tracking-wider text-[#8FA097]">
+          <span className="text-[11px] font-medium text-stage-muted">
             {t('speed')}
           </span>
-          <div className="flex items-baseline gap-1">
-            <span
-              className="font-mono text-base font-bold text-[#E8EEEA]"
-              style={{ fontVariantNumeric: 'tabular-nums' }}
-            >
+          <div className="flex items-baseline gap-1 mt-0.5" dir="ltr">
+            <span className="font-mono text-base font-bold text-stage-ink tabular-nums">
               {currentSpeed}
             </span>
-            <span className="text-[10px] text-[#8FA097] font-mono">km/h</span>
+            <span className="text-[10px] text-stage-muted font-mono">km/h</span>
           </div>
         </div>
 
         {/* 2. Delta V */}
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-mono tracking-wider text-[#8FA097]">
+          <span className="text-[11px] font-medium text-stage-muted">
             {t('deltaV')}
           </span>
-          <div className="flex items-baseline gap-1">
-            <span
-              className="font-mono text-base font-bold text-[#FF4D5E]"
-              style={{ fontVariantNumeric: 'tabular-nums' }}
-            >
+          <div className="flex items-baseline gap-1 mt-0.5" dir="ltr">
+            <span className="font-mono text-base font-bold text-stage-impact tabular-nums">
               {deltaV}
             </span>
-            <span className="text-[10px] text-[#8FA097] font-mono">km/h</span>
+            <span className="text-[10px] text-stage-muted font-mono">km/h</span>
           </div>
         </div>
 
         {/* 3. Impact Direction & Compass Glyph */}
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-mono tracking-wider text-[#8FA097]">
+          <span className="text-[11px] font-medium text-stage-muted">
             {t('direction')}
           </span>
-          <div className="flex items-center gap-1.5">
-            <span
-              className="font-mono text-base font-bold text-[#E8EEEA]"
-              style={{ fontVariantNumeric: 'tabular-nums' }}
-            >
+          <div className="flex items-center gap-1.5 mt-0.5" dir="ltr">
+            <span className="font-mono text-base font-bold text-stage-ink tabular-nums">
               {directionDeg}°
             </span>
-            {/* Compass glyph rotated to angle */}
             <div
-              className="w-4 h-4 rounded-full border border-white/20 flex items-center justify-center transition-transform"
+              className="w-4 h-4 rounded-full border border-white/25 flex items-center justify-center transition-transform"
               style={{ transform: `rotate(${directionDeg}deg)` }}
               title={`Impact at ${directionDeg}°`}
             >
-              <div className="w-0.5 h-2 bg-[#FF4D5E] rounded-full" />
+              <div className="w-0.5 h-2 bg-stage-impact rounded-full" />
             </div>
           </div>
         </div>
 
         {/* 4. Peak g */}
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-mono tracking-wider text-[#8FA097]">
+          <span className="text-[11px] font-medium text-stage-muted">
             {t('peakG')}
           </span>
-          <div className="flex items-baseline gap-1">
-            <span
-              className="font-mono text-base font-bold text-amber-400"
-              style={{ fontVariantNumeric: 'tabular-nums' }}
-            >
+          <div className="flex items-baseline gap-1 mt-0.5" dir="ltr">
+            <span className="font-mono text-base font-bold text-stage-route tabular-nums">
               {peakG}
             </span>
-            <span className="text-[10px] text-[#8FA097] font-mono">g</span>
+            <span className="text-[10px] text-stage-muted font-mono">g</span>
           </div>
         </div>
 
         {/* 5. Rollover */}
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-mono tracking-wider text-[#8FA097]">
+          <span className="text-[11px] font-medium text-stage-muted">
             {t('rollover')}
           </span>
           <span
-            className={`font-mono text-base font-bold ${
-              rollover ? 'text-[#FF4D5E]' : 'text-[#8FA097]'
+            className={`font-mono text-base font-bold mt-0.5 ${
+              rollover ? 'text-stage-impact' : 'text-stage-muted'
             }`}
           >
             {rollover ? t('yes') : t('no')}
@@ -146,12 +142,12 @@ export function TelemetryReadout({
 
         {/* 6. Multiple Impacts */}
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-mono tracking-wider text-[#8FA097]">
+          <span className="text-[11px] font-medium text-stage-muted">
             {t('multipleImpacts')}
           </span>
           <span
-            className={`font-mono text-base font-bold ${
-              multipleImpacts ? 'text-[#FF4D5E]' : 'text-[#8FA097]'
+            className={`font-mono text-base font-bold mt-0.5 ${
+              multipleImpacts ? 'text-stage-impact' : 'text-stage-muted'
             }`}
           >
             {multipleImpacts ? t('yes') : t('no')}

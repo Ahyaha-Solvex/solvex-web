@@ -397,7 +397,33 @@
       "callContactShort": "Contact d’urgence",
       "widen": "Élargir le rayon",
       "cardsSentShort": "Fiches envoyées",
-      "confirmHelperShort": "Confirmer"
+      "confirmHelperShort": "Confirmer",
+      "scenarioIsolated": "Crash en zone isolée (0 témoin)",
+      "scenarioIsolatedDesc": "Crash sans aucun témoin à proximité. Compte à rebours 30s expiré → alerte autonome 100 % M3/M4.",
+      "scenarioMultiWitness": "Crash confirmé par plusieurs témoins",
+      "scenarioMultiWitnessDesc": "5 conducteurs à proximité confirment « Oui, accident » → confiance 100 % immédiate.",
+      "witnessesConfirmedBadge": "{count} témoins ont confirmé",
+      "isolatedBadge": "Zone isolée · 0 témoin",
+      "hospitalsSectionTitle": "Capacité Hospitalière & Orientation",
+      "hospitalCapacity": {
+        "optimal": "Capacité optimale",
+        "busy": "Forte affluence",
+        "saturated": "Saturé · Urgences absolues",
+        "divert": "Complet · Délestage SAMU"
+      },
+      "edBeds": "Lits UMC",
+      "icuBays": "Déchocage / Réa",
+      "occupancy": "Occupation",
+      "orReady": "Bloc dispo",
+      "orBusy": "Bloc occupé",
+      "dispatchUnitToHospital": "Orienter l’unité vers cet hôpital",
+      "dispatchedToHospital": "Unité orientée vers cet hôpital",
+      "diversionWarning": "Établissement en délestage (0 lit)",
+      "trackingTitle": "Suivi GPS Unité Mobile",
+      "trackUnitBtn": "Suivre sur la carte",
+      "trackingActive": "Suivi GPS actif",
+      "routeProgress": "Progression trajet",
+      "unitSpeed": "{speed} km/h"
     }
   },
   "severity": {

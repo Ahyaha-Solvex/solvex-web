@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Checkbox, Tag } from 'antd';
+import { Card, Checkbox } from 'antd';
 import { MedicineBoxOutlined } from '@ant-design/icons';
 import { useTranslations } from 'next-intl';
 import type { PrepItem } from '@/lib/data/types';
@@ -47,10 +47,28 @@ export function PrepChecklist({
     );
   }
 
-  const priorityConfig: Record<'immediate' | 'urgent' | 'routine', { color: string; label: string }> = {
-    immediate: { color: 'error', label: 'Immediate' },
-    urgent: { color: 'warning', label: 'Urgent' },
-    routine: { color: 'default', label: 'Routine' },
+  const priorityConfig: Record<
+    'immediate' | 'urgent' | 'routine',
+    { bg: string; border: string; text: string; dot: string }
+  > = {
+    immediate: {
+      bg: 'var(--sev-extreme-subtle)',
+      border: 'var(--sev-extreme)',
+      text: 'var(--sev-extreme)',
+      dot: 'var(--sev-extreme)',
+    },
+    urgent: {
+      bg: 'rgba(201, 86, 15, 0.12)',
+      border: 'var(--sev-high)',
+      text: 'var(--sev-high)',
+      dot: 'var(--sev-high)',
+    },
+    routine: {
+      bg: 'var(--surface-2)',
+      border: 'var(--border)',
+      text: 'var(--muted)',
+      dot: 'var(--brand)',
+    },
   };
 
   const completedCount = Object.values(checkedState).filter(Boolean).length;
@@ -60,60 +78,57 @@ export function PrepChecklist({
       size="small"
       className={`bg-surface border-border shadow-1 ${className}`}
       title={
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="font-semibold text-sm text-ink flex items-center gap-2">
             <MedicineBoxOutlined className="text-brand" />
             <span>{t('prepTitle')}</span>
           </span>
-          <span className="font-mono text-xs text-muted">
-            {completedCount} / {items.length} {t('prepared')}
+          <span className="px-2 py-0.5 rounded-sm bg-brand-subtle border border-brand/25 font-mono text-xs font-semibold text-brand tabular-nums">
+            {completedCount}/{items.length} {t('prepared')}
           </span>
         </div>
       }
     >
-      <div className="space-y-3">
+      <div className="space-y-2">
         {items.map((item) => {
           const isChecked = !!checkedState[item.id];
           const prioKey = item.priority || 'routine';
           const prio = priorityConfig[prioKey] || priorityConfig.routine;
 
           return (
-            <div
+            <label
               key={item.id}
-              className={`p-2.5 rounded-lg border transition-all ${
+              className={`flex items-start gap-3 p-3 rounded-md border transition-all cursor-pointer select-none ${
                 isChecked
-                  ? 'bg-surface-2/60 border-border opacity-70'
-                  : 'bg-surface border-border hover:border-border-strong'
+                  ? 'bg-surface-2/60 border-border opacity-65'
+                  : 'bg-surface border-border hover:bg-surface-2/50 hover:border-border-strong'
               }`}
             >
-              <div className="flex items-start gap-2.5">
-                <Checkbox
-                  checked={isChecked}
-                  onChange={(e) => handleToggle(item.id, e.target.checked)}
-                  className="mt-0.5"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={`text-xs font-semibold ${
-                        isChecked ? 'line-through text-muted' : 'text-ink'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                    <Tag
-                      color={prio.color}
-                      className="m-0 text-[10px] px-1 py-0 font-medium"
-                    >
-                      {prio.label}
-                    </Tag>
-                  </div>
-                  <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
-                    {item.reason}
-                  </p>
+              <Checkbox
+                checked={isChecked}
+                onChange={(e) => handleToggle(item.id, e.target.checked)}
+                className="mt-0.5 shrink-0"
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={`text-xs font-semibold leading-snug ${
+                      isChecked ? 'line-through text-muted' : 'text-ink'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                  <span
+                    className="w-2 h-2 rounded-full shrink-0"
+                    style={{ backgroundColor: prio.dot }}
+                    aria-hidden="true"
+                  />
                 </div>
+                <p className="text-xs text-muted mt-1 leading-relaxed">
+                  {item.reason}
+                </p>
               </div>
-            </div>
+            </label>
           );
         })}
       </div>

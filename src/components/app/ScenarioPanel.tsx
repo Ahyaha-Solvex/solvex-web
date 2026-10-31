@@ -22,6 +22,8 @@ import {
   ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useTranslations } from 'next-intl';
+import { SimBadge } from './SimBadge';
+import { StatusTag } from './StatusTag';
 import { useIncidentSource } from './SourceProvider';
 import { useIncidentStore } from '@/lib/stores/incidentStore';
 import { useUiStore } from '@/lib/stores/uiStore';
@@ -29,6 +31,7 @@ import { useUiStore } from '@/lib/stores/uiStore';
 export function ScenarioPanel() {
   const source = useIncidentSource();
   const tZone = useTranslations('responder.zone');
+  const tw = useTranslations('responder.workspace');
   const online = useIncidentStore((s) => s.online);
   const activeIncident = useIncidentStore((s) => s.getActiveIncident());
   const drawerOpen = useUiStore((s) => s.scenarioDrawerOpen);
@@ -85,9 +88,7 @@ export function ScenarioPanel() {
           {/* Rule 9 Honesty Label */}
           <div className="p-3 rounded-lg bg-surface-2 border border-border flex items-center justify-between">
             <span className="text-xs font-medium text-ink">Mode source :</span>
-            <Tag color="magenta" className="m-0 font-mono text-xs">
-              Simulated blackbox stream
-            </Tag>
+            <SimBadge forceShow />
           </div>
 
           {/* Network Switch */}
@@ -179,6 +180,24 @@ export function ScenarioPanel() {
                   Bouton SOS (100%)
                 </Button>
               </div>
+              <div className="grid grid-cols-1 gap-2">
+                <Button
+                  block
+                  type="primary"
+                  onClick={() => source.triggerIsolatedCrash()}
+                  className="px-3 text-xs font-semibold h-10"
+                >
+                  {tw('scenarioIsolated')}
+                </Button>
+                <Button
+                  block
+                  type="primary"
+                  onClick={() => source.triggerMultiWitnessCrash()}
+                  className="px-3 text-xs font-semibold h-10"
+                >
+                  {tw('scenarioMultiWitness')}
+                </Button>
+              </div>
               <Button block onClick={() => source.startDeadZone()} className="text-xs font-semibold h-10">
                 {tZone('simulate')}
               </Button>
@@ -209,12 +228,12 @@ export function ScenarioPanel() {
                 className="bg-surface"
               >
                 <Descriptions.Item label="Statut">
-                  <Tag color="blue">{activeIncident.lifecycle}</Tag>
+                  <StatusTag status={activeIncident.lifecycle} size="small" />
                 </Descriptions.Item>
                 <Descriptions.Item label="Canal">
-                  <Tag color={activeIncident.channel === 'data' ? 'green' : 'orange'}>
+                  <span className="px-2 py-0.5 rounded-sm bg-surface-2 border border-border font-mono text-xs font-semibold text-ink-2">
                     {activeIncident.channel.toUpperCase()}
-                  </Tag>
+                  </span>
                 </Descriptions.Item>
                 <Descriptions.Item label="Confiance">
                   <span className="font-mono font-bold">

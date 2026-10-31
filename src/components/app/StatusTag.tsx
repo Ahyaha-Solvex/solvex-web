@@ -34,36 +34,36 @@ export function StatusTag({
 
   const config = {
     detected: {
-      color: '#E6F1EA',
-      borderColor: '#006233',
-      textColor: '#004D28',
+      color: 'var(--brand-subtle)',
+      borderColor: 'var(--brand)',
+      textColor: 'var(--brand-press)',
       icon: <AlertOutlined />,
       label: t('detected'),
     },
     dispatched: {
-      color: '#E6F1EA',
-      borderColor: '#007A41',
-      textColor: '#004D28',
+      color: 'var(--brand-subtle)',
+      borderColor: 'var(--brand-hover)',
+      textColor: 'var(--brand-press)',
       icon: <SendOutlined />,
       label: t('dispatched'),
     },
     on_scene: {
-      color: '#D1E6D8',
-      borderColor: '#006233',
-      textColor: '#004D28',
+      color: 'var(--brand-subtle)',
+      borderColor: 'var(--brand)',
+      textColor: 'var(--brand-press)',
       icon: <EnvironmentOutlined />,
       label: t('on_scene'),
     },
     transporting: {
-      color: '#006233',
-      borderColor: '#004D28',
+      color: 'var(--brand)',
+      borderColor: 'var(--brand-press)',
       textColor: '#FFFFFF',
       icon: <CarOutlined />,
       label: t('transporting'),
     },
     at_hospital: {
-      color: '#004D28',
-      borderColor: '#00331A',
+      color: 'var(--brand-press)',
+      borderColor: 'var(--brand-press)',
       textColor: '#FFFFFF',
       icon: <MedicineBoxOutlined />,
       label: t('at_hospital'),
@@ -78,8 +78,8 @@ export function StatusTag({
   }[status];
 
   const sizeClasses = {
-    small: 'text-xs px-3 py-1.5 min-h-[28px] rounded-md gap-1.5',
-    middle: 'text-xs px-3.5 py-2 min-h-[34px] rounded-lg font-semibold gap-2',
+    small: 'text-xs px-2.5 py-1 min-h-[24px] rounded-sm gap-1.5 font-medium',
+    middle: 'text-xs px-3 py-1.5 min-h-[32px] rounded-md font-semibold gap-2',
   }[size];
 
   const effectiveTextColor = disabled ? 'var(--muted)' : config.textColor;

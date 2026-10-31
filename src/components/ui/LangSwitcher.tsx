@@ -19,7 +19,7 @@ export function LangSwitcher() {
     <div
       role="group"
       aria-label="Language selection"
-      className="inline-flex items-center rounded-full border border-border bg-surface-2 p-0.5 text-xs font-medium shadow-1"
+      className="inline-flex items-center h-8 rounded-full border border-border-strong bg-surface-2 p-0.5 text-xs font-medium shadow-1 shrink-0"
     >
       {locales.map((loc) => {
         const isActive = loc === locale;
@@ -28,10 +28,10 @@ export function LangSwitcher() {
             key={loc}
             type="button"
             onClick={() => handleChange(loc)}
-            className={`px-3 py-1 rounded-full transition-all duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
+            className={`h-full px-2.5 rounded-full transition-all duration-fast inline-flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${
               isActive
                 ? 'bg-brand text-white font-semibold shadow-1'
-                : 'text-muted hover:text-ink hover:bg-surface'
+                : 'text-ink-2 hover:text-ink hover:bg-surface'
             }`}
           >
             {t(loc)}

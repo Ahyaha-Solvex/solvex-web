@@ -212,10 +212,79 @@ const DEBRIS = [
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
+function isActualCollision(incident: Incident | null | undefined): boolean {
+  if (!incident) return true;
+  if (incident.m2.level === 'none') return false;
+  if ((incident.crash?.deltaVKmh ?? 50) < 25) return false;
+  return true;
+}
+
 /** Where the car is at a replay time. The camera and the car read the same path. */
-function carPose(timeMs: number, impactMs: number, speedMs: number, impactDeg: number, rollover: boolean) {
+function carPose(
+  timeMs: number,
+  impactMs: number,
+  speedMs: number,
+  impactDeg: number,
+  rollover: boolean,
+  isCrash = true
+) {
+  if (!isCrash) {
+    // Non-crash triggered events:
+    // 1. Evasive lane swerve (impactDeg >= 45): swerves smoothly into clear left lane (-LANE_X) around impactMs and keeps driving
+    if (impactDeg >= 45) {
+      const dt = (timeMs - impactMs) / 1000;
+      const z = dt * speedMs * 0.85;
+      const swerveProgress = clamp01((dt + 1.2) / 2.0);
+      const smooth = swerveProgress * swerveProgress * (3 - 2 * swerveProgress);
+      const x = LANE_X - smooth * (LANE_X * 2);
+      const yaw = -Math.sin(swerveProgress * Math.PI) * 0.28;
+      const roll = Math.sin(swerveProgress * Math.PI) * 0.08;
+      return { x, y: 0, z, yaw, roll, pitch: 0, seconds: -1 };
+    }
+    // 2. Road bump / pothole jolt (impactDeg < 0): drives continuously over a bump at impactMs
+    if (impactDeg < 0) {
+      const dt = (timeMs - impactMs) / 1000;
+      const z = dt * speedMs * 0.8;
+      const bumpWindow = Math.abs(dt) < 0.45 ? Math.sin(((dt + 0.45) / 0.9) * Math.PI * 3) * Math.exp(-Math.abs(dt) * 4) : 0;
+      return { x: LANE_X, y: Math.max(0, bumpWindow * 0.22), z, yaw: 0, roll: bumpWindow * 0.06, pitch: bumpWindow * 0.05, seconds: -1 };
+    }
+    // 3. Hard emergency braking (impactDeg === 0): brakes hard starting 2.2s before impactMs and stops safely at z = -12.5m well before the barrier
+    const brakeDurationMs = 2200;
+    const brakeTimeSec = brakeDurationMs / 1000;
+    const brakeDist = 0.5 * speedMs * brakeTimeSec;
+    const brakeStartMs = impactMs - brakeDurationMs;
+    const stopZ = -12.5;
+    if (timeMs <= brakeStartMs) {
+      const tBefore = (brakeStartMs - timeMs) / 1000;
+      return {
+        x: LANE_X,
+        y: 0,
+        z: stopZ - brakeDist - tBefore * speedMs,
+        yaw: 0,
+        roll: 0,
+        pitch: 0,
+        seconds: -1,
+      };
+    }
+    if (timeMs < impactMs) {
+      const p = clamp01((timeMs - brakeStartMs) / brakeDurationMs);
+      const rem = (1 - p) * (1 - p);
+      const pitch = Math.sin(p * Math.PI) * 0.085; // nose-dive under hard braking
+      return {
+        x: LANE_X,
+        y: 0,
+        z: stopZ - brakeDist * rem,
+        yaw: 0,
+        roll: 0,
+        pitch,
+        seconds: -1,
+      };
+    }
+    return { x: LANE_X, y: 0, z: stopZ, yaw: 0, roll: 0, pitch: 0, seconds: -1 };
+  }
+
   if (timeMs < impactMs) {
-    return { x: LANE_X, y: 0, z: (-(impactMs - timeMs) / 1000) * speedMs, yaw: 0, roll: 0, seconds: -1 };
+    return { x: LANE_X, y: 0, z: (-(impactMs - timeMs) / 1000) * speedMs, yaw: 0, roll: 0, pitch: 0, seconds: -1 };
   }
   const seconds = (timeMs - impactMs) / 1000;
   const slide = clamp01(seconds / SLIDE_SECONDS);
@@ -228,18 +297,21 @@ function carPose(timeMs: number, impactMs: number, speedMs: number, impactDeg: n
     z: -(1 - (1 - slide) * (1 - slide)) * REBOUND_METERS,
     yaw: slide * (side > 0 ? 0.35 : -0.35),
     roll: flip * Math.PI,
+    pitch: 0,
     seconds,
   };
 }
 
 function incidentPose(incident: Incident | null | undefined, timeMs: number, impactMs: number) {
   const crash = incident?.crash;
+  const isCrash = isActualCollision(incident);
   return carPose(
     timeMs,
     impactMs,
     ((crash?.speedBeforeKmh ?? 80) * 1000) / 3600,
     crash?.impactDirectionDeg ?? 90,
-    crash?.rollover ?? false
+    crash?.rollover ?? false,
+    isCrash
   );
 }
 
@@ -301,6 +373,7 @@ function EgoCar({
     const pose = incidentPose(incident, currentTimeMs, impactAtMs);
     carRef.current.position.set(pose.x, pose.y, pose.z);
     carRef.current.rotation.y = pose.yaw;
+    rollRef.current.rotation.x = pose.pitch;
     rollRef.current.rotation.z = pose.roll;
 
     const spin = (pose.z / 0.3) % (Math.PI * 2);
@@ -568,11 +641,23 @@ function ChaseCameraController({ incident, isDegraded }: { incident?: Incident |
     const carZ = isDegraded ? 0 : pose.z;
 
     // Chase pose: the car drives towards +Z, so the camera sits 10m behind it, 4m above
-    const targetCamPos = new THREE.Vector3(carX, 4, carZ - 10);
-    const targetLookAt = new THREE.Vector3(carX, 0.8, carZ + 3);
+    const isHardBraking = !isActualCollision(incident) && (incident?.crash?.impactDirectionDeg ?? 90) === 0;
+    const brakeCamProgress = isHardBraking ? clamp01((t - (tImpact - 2400)) / 2400) : 0;
+    const smoothBrakeCam = brakeCamProgress * brakeCamProgress * (3 - 2 * brakeCamProgress);
+
+    const targetCamPos = new THREE.Vector3(
+      carX - 2.8 * smoothBrakeCam,
+      4 + 1.4 * smoothBrakeCam,
+      carZ - 10 + 1.5 * smoothBrakeCam
+    );
+    const targetLookAt = new THREE.Vector3(
+      carX,
+      0.8 - 0.1 * smoothBrakeCam,
+      carZ + 3 + 4.5 * smoothBrakeCam
+    );
 
     // Camera Shake at impact (amplitude from g, 250ms decay per SPEC_3D)
-    if (!isDegraded && t >= tImpact && t < tImpact + 250) {
+    if (!isDegraded && isActualCollision(incident) && t >= tImpact && t < tImpact + 250) {
       const shakeProgress = (t - tImpact) / 250;
       const decay = 1 - shakeProgress;
       const shakeAmp = decay * 0.18;
@@ -582,8 +667,14 @@ function ChaseCameraController({ incident, isDegraded }: { incident?: Incident |
     }
 
     // One owner per frame: the follow while playing, OrbitControls (which updates itself) while paused.
+    const isManualTick = typeof window !== 'undefined' && Boolean((window as unknown as { __SOLVEX_MANUAL_TICK__?: boolean }).__SOLVEX_MANUAL_TICK__);
     if (isPlaying) {
-      camera.position.lerp(targetCamPos, 0.1);
+      const dist = camera.position.distanceTo(targetCamPos);
+      if (dist > 3 || isManualTick) {
+        camera.position.copy(targetCamPos);
+      } else {
+        camera.position.lerp(targetCamPos, 0.18);
+      }
       camera.lookAt(targetLookAt);
       controlsRef.current?.target.copy(targetLookAt);
     } else {
@@ -612,11 +703,25 @@ function ChaseCameraController({ incident, isDegraded }: { incident?: Incident |
  * Drive-mode Speed HUD
  * SPEC_3D: speed in large number bottom-center when playing pre-impact (stage-ink, mono, 56px), disappears after impact.
  */
-function SpeedHud({ speedKmh }: { speedKmh: number }) {
+function SpeedHud({ speedKmh, incident }: { speedKmh: number; incident?: Incident | null }) {
   const currentTimeMs = useReplayStore((s) => s.currentTimeMs);
   const impactAtMs = useReplayStore((s) => s.impactAtMs);
   const isPlaying = useReplayStore((s) => s.isPlaying);
-  if (!isPlaying || currentTimeMs >= impactAtMs) return null;
+  const isHardBraking = !isActualCollision(incident) && (incident?.crash?.impactDirectionDeg ?? 90) === 0;
+
+  if (!isPlaying && !isHardBraking) return null;
+  if (!isHardBraking && currentTimeMs >= impactAtMs) return null;
+
+  let displaySpeed = speedKmh;
+  if (isHardBraking) {
+    const brakeStartMs = impactAtMs - 2200;
+    if (currentTimeMs >= impactAtMs) {
+      displaySpeed = 0;
+    } else if (currentTimeMs > brakeStartMs) {
+      const p = clamp01((currentTimeMs - brakeStartMs) / 2200);
+      displaySpeed = speedKmh * (1 - p);
+    }
+  }
 
   return (
     <div
@@ -628,7 +733,7 @@ function SpeedHud({ speedKmh }: { speedKmh: number }) {
           className="font-mono text-5xl font-bold tracking-tight text-[#E8EEEA] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
           style={{ fontVariantNumeric: 'tabular-nums' }}
         >
-          {Math.round(speedKmh)}
+          {Math.round(displaySpeed)}
         </span>
         <span className="font-mono text-xs text-[#8FA097] uppercase">km/h</span>
       </div>
@@ -693,9 +798,9 @@ export function CrashScene({ incident, className = '', active = true }: CrashSce
 
           {/* Ego Car */}
           <EgoCar incident={incident} isDegraded={isDegraded} />
-          {!isDegraded && DEBRIS.map((piece) => <DebrisPiece key={piece.file} {...piece} />)}
+          {!isDegraded && isActualCollision(incident) && DEBRIS.map((piece) => <DebrisPiece key={piece.file} {...piece} />)}
 
-          {!isDegraded && <Barrier />}
+          {!isDegraded && (incident?.crash?.impactDirectionDeg ?? 90) >= 0 && <Barrier />}
 
           {/* Surrounding ghost vehicles */}
           <SurroundingVehicles vehicles={incident?.nearbyVehicles} />
@@ -713,7 +818,7 @@ export function CrashScene({ incident, className = '', active = true }: CrashSce
       </Canvas>
 
       {/* Drive-mode Speed HUD Overlay */}
-      <SpeedHud speedKmh={speedKmh} />
+      <SpeedHud speedKmh={speedKmh} incident={incident} />
 
       {/* Degraded SMS Mode Banner Overlay (SPEC_RESPONDER line 19) */}
       {incident?.channel === 'sms' && (

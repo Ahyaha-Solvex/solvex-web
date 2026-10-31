@@ -122,14 +122,15 @@ export function TelemetryTrace({
   return (
     <div
       ref={containerRef}
+      dir="ltr"
       onClick={handleClick}
-      className={`relative h-[80px] w-full max-w-lg px-2.5 py-1.5 rounded-xl bg-[#0B1310]/85 backdrop-blur-md border border-white/10 shadow-lg cursor-pointer select-none group overflow-hidden ${className}`}
+      className={`relative h-[80px] w-full max-w-md px-3 py-1.5 rounded-lg bg-stage-bg/90 backdrop-blur-md border border-white/12 shadow-2 cursor-pointer select-none group overflow-hidden ${className}`}
       title="Click to scrub replay time"
     >
       {/* Header labels */}
-      <div className="flex items-center justify-between text-[10px] font-mono text-[#8FA097] px-1 pointer-events-none">
-        <span className="uppercase font-semibold tracking-wider">Resultant Acceleration (g)</span>
-        <span>Peak {maxG.toFixed(1)}g</span>
+      <div className="flex items-center justify-between text-[11px] font-mono text-stage-muted px-0.5 pointer-events-none">
+        <span className="font-medium">Acceleration (g)</span>
+        <span className="tabular-nums">Peak {maxG.toFixed(1)}g</span>
       </div>
 
       {/* SVG Waveform Area */}

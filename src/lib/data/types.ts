@@ -138,6 +138,8 @@ export interface NearbyVehicle {
   kind: 'car' | 'truck' | 'bus' | 'moto';
 }
 
+export type HospitalCapacityStatus = 'optimal' | 'busy' | 'saturated' | 'divert';
+
 export interface Ambulance {
   id: string;
   unit: string;
@@ -145,6 +147,10 @@ export interface Ambulance {
   lat: number;
   lng: number;
   etaSeconds?: number;
+  speedKmh?: number;
+  headingDeg?: number;
+  routeProgressPct?: number;
+  destinationHospitalId?: string;
 }
 
 export interface HospitalOption {
@@ -152,6 +158,13 @@ export interface HospitalOption {
   name: string;
   etaSeconds: number;
   freeBeds: number;
+  totalBeds?: number;
+  icuBedsFree?: number;
+  occupancyPct?: number;
+  capacityStatus?: HospitalCapacityStatus;
+  orAvailable?: boolean;
+  lat?: number;
+  lng?: number;
   specialties: string[];
   score: number;
   reasons: string[];
@@ -164,6 +177,8 @@ export interface Dispatch {
   etaToSceneS?: number;
   etaToHospitalS?: number;
   polyline?: [number, number][];
+  hospitalPolyline?: [number, number][];
+  routeProgressPct?: number;
 }
 
 export interface PrepItem {
@@ -223,6 +238,8 @@ export interface Incident {
   phoneReport?: PhoneReport;
   deadZone?: DeadZoneWatch;
   yellowLineDrivers?: number; // drivers on the route told to clear the yellow line
+  witnessCount?: number;
+  scenarioKind?: 'standard' | 'isolated' | 'multi_witness';
 }
 
 export type SourceEvent =

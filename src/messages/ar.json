@@ -397,7 +397,33 @@
       "callContactShort": "جهة الطوارئ",
       "widen": "توسيع النطاق",
       "cardsSentShort": "أُرسلت البطاقات",
-      "confirmHelperShort": "تأكيد"
+      "confirmHelperShort": "تأكيد",
+      "scenarioIsolated": "حادث في منطقة معزولة (0 شهود)",
+      "scenarioIsolatedDesc": "حادث دون أي شهود بالجوار. انتهاء العد التنازلي 30 ثانية ← تنبيه تلقائي 100%.",
+      "scenarioMultiWitness": "حادث مؤكد من عدة شهود",
+      "scenarioMultiWitnessDesc": "5 سائقين بالجوار يؤكدون 'نعم، يوجد حادث' ← ثقة فورية 100%.",
+      "witnessesConfirmedBadge": "أكده {count} شهود",
+      "isolatedBadge": "منطقة معزولة · 0 شهود",
+      "hospitalsSectionTitle": "طاقة المستشفيات والتوجيه",
+      "hospitalCapacity": {
+        "optimal": "طاقة استيعابية مثالية",
+        "busy": "ضغط مرتفع · أسرة محدودة",
+        "saturated": "مشبع · للحالات الحرجة",
+        "divert": "ممتلئ · تحويل المسار"
+      },
+      "edBeds": "أسرة الطوارئ",
+      "icuBays": "العناية والصدمات",
+      "occupancy": "نسبة الإشغال",
+      "orReady": "غرفة العمليات جاهزة",
+      "orBusy": "غرفة العمليات مشغولة",
+      "dispatchUnitToHospital": "توجيه الإسعاف إلى هذا المستشفى",
+      "dispatchedToHospital": "تم توجيه الإسعاف إلى المستشفى",
+      "diversionWarning": "المستشفى ممتلئ (0 سرير)",
+      "trackingTitle": "تتبع سيارة الإسعاف مباشرة",
+      "trackUnitBtn": "تتبع على الخريطة",
+      "trackingActive": "التتبع نشط",
+      "routeProgress": "تقدم المسار",
+      "unitSpeed": "{speed} كم/س"
     }
   },
   "severity": {

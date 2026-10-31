@@ -114,4 +114,51 @@ describe('SimSource & IncidentStore (CP1 Data Layer)', () => {
     // Event log contains entries
     expect(useIncidentStore.getState().eventLog.length).toBeGreaterThan(0);
   });
+
+  it('triggers Isolated Crash scenario (0 witnesses, autonomous alert)', () => {
+    const store = useIncidentStore.getState();
+    sim.subscribe((ev) => store.applyEvent(ev));
+
+    sim.triggerIsolatedCrash();
+
+    const active = useIncidentStore.getState().getActiveIncident();
+    expect(active).toBeDefined();
+    expect(active?.scenarioKind).toBe('isolated');
+    expect(active?.witnessCount).toBe(0);
+    expect(active?.nearbyPeople?.length ?? 0).toBe(0);
+    expect(active?.confidence.score).toBe(88);
+    expect(active?.confidence.status).toBe('likely');
+  });
+
+  it('triggers Multi-Witness Confirmed Crash scenario (5 witnesses confirm)', () => {
+    const store = useIncidentStore.getState();
+    sim.subscribe((ev) => store.applyEvent(ev));
+
+    sim.triggerMultiWitnessCrash();
+
+    const active = useIncidentStore.getState().getActiveIncident();
+    expect(active).toBeDefined();
+    expect(active?.scenarioKind).toBe('multi_witness');
+    expect(active?.witnessCount).toBe(5);
+    expect(active?.confidence.score).toBe(100);
+    expect(active?.confidence.status).toBe('witness_confirmed');
+  });
+
+  it('dispatches unit to a receiving hospital and exposes clinical capacity statuses', () => {
+    const store = useIncidentStore.getState();
+    sim.subscribe((ev) => store.applyEvent(ev));
+
+    sim.dispatchToHospital('inc-rn5-4821', 'chu-blida', 'amb-102');
+
+    const active = useIncidentStore.getState().getActiveIncident();
+    expect(active?.dispatch.hospitalId).toBe('chu-blida');
+    expect(active?.dispatch.ambulanceId).toBe('amb-102');
+    expect(active?.dispatch.hospitalPolyline?.length).toBeGreaterThan(1);
+
+    const capacities = active?.hospitalOptions.map((h) => h.capacityStatus);
+    expect(capacities).toContain('optimal');
+    expect(capacities).toContain('busy');
+    expect(capacities).toContain('saturated');
+    expect(capacities).toContain('divert');
+  });
 });

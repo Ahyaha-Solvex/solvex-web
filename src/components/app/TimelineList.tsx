@@ -19,17 +19,22 @@ import { EmptyState } from './EmptyState';
 export interface TimelineListProps {
   events?: TimelineEvent[];
   loading?: boolean;
+  bare?: boolean;
   className?: string;
 }
 
 export function TimelineList({
   events = [],
   loading = false,
+  bare = false,
   className = '',
 }: TimelineListProps) {
   const t = useTranslations('responder');
 
   if (loading) {
+    if (bare) {
+      return <Skeleton active paragraph={{ rows: 3 }} className={className} />;
+    }
     return (
       <Card size="small" className={`bg-surface border-border shadow-1 ${className}`}>
         <Skeleton active paragraph={{ rows: 3 }} />
@@ -40,7 +45,7 @@ export function TimelineList({
   if (!events || events.length === 0) {
     return (
       <EmptyState
-        title="No timeline events"
+        title={t('timelineTitle')}
         description="Event log will populate as telemetry and messages arrive."
         className={className}
       />
@@ -59,12 +64,12 @@ export function TimelineList({
       case 'alert_sent':
         return <LineChartOutlined className="text-brand" />;
       case 'sms_received':
-        return <MessageFilled className="text-yellow-600" />;
+        return <MessageFilled className="text-sev-medium" />;
       case 'witness_confirm':
       case 'dispatcher_confirm':
         return <CheckCircleOutlined className="text-brand" />;
       case 'ambulance_assigned':
-        return <SendOutlined className="text-blue-600" />;
+        return <SendOutlined className="text-brand" />;
       case 'on_scene':
       case 'at_hospital':
         return <EnvironmentFilled className="text-brand" />;
@@ -91,20 +96,28 @@ export function TimelineList({
       key: `${ev.t}-${i}`,
       dot: getKindIcon(ev.kind),
       children: (
-        <div className="pb-3 text-xs">
-          <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-ink">{ev.label}</span>
-            <span className="font-mono text-[11px] text-muted tabular-nums">
+        <div className="pb-2.5 text-xs">
+          <div className="flex items-start justify-between gap-2">
+            <span className="font-medium text-ink leading-snug">{ev.label}</span>
+            <span
+              className="font-mono text-[11px] text-muted tabular-nums shrink-0"
+              dir="ltr"
+            >
               {formattedTime}
             </span>
           </div>
-          <span className="text-[10px] text-muted font-mono uppercase tracking-wider block mt-0.5">
-            {ev.kind.replace('_', ' ')}
-          </span>
         </div>
       ),
     };
   });
+
+  if (bare) {
+    return (
+      <div className={`pt-2 ${className}`}>
+        <Timeline items={timelineItems} />
+      </div>
+    );
+  }
 
   return (
     <Card

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Card, Tag, Button } from 'antd';
+import { Card, Button } from 'antd';
 import {
   MedicineBoxFilled,
   SafetyCertificateFilled,
@@ -25,34 +25,43 @@ export function NearbyPeopleList({
   className = '',
 }: NearbyPeopleListProps) {
   const t = useTranslations('responder');
+  const tw = useTranslations('responder.workspace');
 
   const kindConfig: Record<
     NearbyPerson['kind'],
-    { color: string; tagColor: string; icon: React.ReactNode; label: string }
+    { dotColor: string; badgeBg: string; badgeBorder: string; badgeText: string; icon: React.ReactNode; label: string }
   > = {
     helper_medic: {
-      color: 'var(--sev-extreme)',
-      tagColor: 'error',
+      dotColor: 'var(--sev-extreme)',
+      badgeBg: 'var(--sev-extreme-subtle)',
+      badgeBorder: 'var(--sev-extreme)',
+      badgeText: 'var(--sev-extreme)',
       icon: <MedicineBoxFilled />,
-      label: 'Médecin urgentiste',
+      label: t('kind.helper_medic'),
     },
     helper_first_aider: {
-      color: 'var(--sev-high)',
-      tagColor: 'warning',
+      dotColor: 'var(--sev-high)',
+      badgeBg: 'rgba(201, 86, 15, 0.12)',
+      badgeBorder: 'var(--sev-high)',
+      badgeText: 'var(--sev-high)',
       icon: <SafetyCertificateFilled />,
-      label: 'Secouriste breveté',
+      label: t('kind.helper_first_aider'),
     },
     volunteer: {
-      color: 'var(--brand)',
-      tagColor: 'default',
+      dotColor: 'var(--brand)',
+      badgeBg: 'var(--surface)',
+      badgeBorder: 'var(--border-strong)',
+      badgeText: 'var(--ink-2)',
       icon: <UserOutlined />,
-      label: 'Citoyen volontaire',
+      label: t('kind.volunteer'),
     },
     staff: {
-      color: 'var(--brand)',
-      tagColor: 'processing',
+      dotColor: 'var(--brand)',
+      badgeBg: 'var(--brand-subtle)',
+      badgeBorder: 'var(--brand)',
+      badgeText: 'var(--brand-press)',
       icon: <SafetyCertificateFilled />,
-      label: 'Agent de service',
+      label: t('kind.staff'),
     },
   };
 
@@ -61,13 +70,13 @@ export function NearbyPeopleList({
       size="small"
       className={`bg-surface border-border shadow-1 ${className}`}
       title={
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="font-semibold text-sm text-ink flex items-center gap-2">
             <SafetyCertificateFilled className="text-brand" />
             <span>{t('helpersTitle')}</span>
           </span>
-          <span className="font-mono text-xs text-muted">
-            {people.length} détectés
+          <span className="font-mono text-xs text-muted tabular-nums">
+            {people.length}
           </span>
         </div>
       }
@@ -80,18 +89,18 @@ export function NearbyPeopleList({
             onClick={onCallHelp}
             className="text-xs"
           >
-            Alerter le périmètre
+            {t('actions.callForHelp')}
           </Button>
         )
       }
     >
       {people.length === 0 ? (
         <EmptyState
-          title="Aucun volontaire à proximité"
-          description="Diffuser un appel à solidarité pour mobiliser les secouristes locaux."
+          title={t('helpersTitle')}
+          description={tw('noHelpers')}
         />
       ) : (
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {people.map((person, idx) => {
             const conf = kindConfig[person.kind] || kindConfig.volunteer;
             const isMedic = person.kind === 'helper_medic';
@@ -99,10 +108,10 @@ export function NearbyPeopleList({
             return (
               <div
                 key={person.id}
-                className={`p-2.5 rounded-lg border transition-all flex items-center justify-between gap-2 text-xs ${
+                className={`p-3 rounded-md border transition-all flex items-center justify-between gap-3 text-xs ${
                   isMedic
-                    ? 'bg-sev-extreme-subtle/30 border-sev-extreme/40'
-                    : 'bg-surface-2 border-border'
+                    ? 'bg-sev-extreme-subtle/35 border-sev-extreme/35'
+                    : 'bg-surface-2/80 border-border'
                 }`}
               >
                 {/* Person details */}
@@ -110,46 +119,56 @@ export function NearbyPeopleList({
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
                       className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: conf.color }}
+                      style={{ backgroundColor: conf.dotColor }}
                     />
                     <span
                       className={`font-semibold truncate ${
                         isMedic ? 'text-sev-extreme font-bold' : 'text-ink'
                       }`}
                     >
-                      {person.id.toUpperCase()} · Intervenant #{idx + 1}
+                      {person.name ?? `${conf.label} #${idx + 1}`}
                     </span>
-                    <Tag
-                      color={conf.tagColor}
-                      className="m-0 text-[10px] px-1 py-0 flex items-center gap-1"
+                    <span
+                      style={{
+                        backgroundColor: conf.badgeBg,
+                        borderColor: conf.badgeBorder,
+                        color: conf.badgeText,
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-sm border text-[10px] font-semibold"
                     >
                       {conf.icon}
                       <span>{conf.label}</span>
-                    </Tag>
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-3 text-muted text-[11px] ps-4">
-                    <span className="font-mono tabular-nums">{person.distanceM} m</span>
+                  <div className="flex items-center gap-3 text-muted text-[11px] ps-4" dir="ltr">
+                    <span className="font-mono font-semibold tabular-nums text-ink-2">
+                      {person.distanceM} m
+                    </span>
                     <span className="font-mono text-[10px]">
-                      GPS {person.lat.toFixed(3)}°, {person.lng.toFixed(3)}°
+                      {person.lat.toFixed(3)}°, {person.lng.toFixed(3)}°
                     </span>
                   </div>
                 </div>
 
-                {/* Status tag */}
+                {/* Status badge */}
                 <div className="shrink-0 text-end">
-                  <Tag
-                    color={person.accepted ? 'success' : 'default'}
-                    className="m-0 text-[10px] font-medium"
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-sm border text-[11px] font-semibold ${
+                      person.accepted
+                        ? 'bg-brand-subtle border-brand/30 text-brand'
+                        : 'bg-surface border-border text-muted'
+                    }`}
                   >
                     {person.accepted ? (
-                      <span className="flex items-center gap-1">
-                        <CheckCircleOutlined /> Sur place
-                      </span>
+                      <>
+                        <CheckCircleOutlined />
+                        <span>{t('volunteerOnWay')}</span>
+                      </>
                     ) : (
-                      'En attente'
+                      <span>{t('callVolunteer')}</span>
                     )}
-                  </Tag>
+                  </span>
                 </div>
               </div>
             );

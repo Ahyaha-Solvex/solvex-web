@@ -397,7 +397,33 @@
       "callContactShort": "Emergency contact",
       "widen": "Widen radius",
       "cardsSentShort": "Cards sent",
-      "confirmHelperShort": "Confirm"
+      "confirmHelperShort": "Confirm",
+      "scenarioIsolated": "Isolated Crash (0 Witnesses)",
+      "scenarioIsolatedDesc": "Night/mountain crash with nobody nearby. 30s driver countdown expires → autonomous 100% M3/M4 alert.",
+      "scenarioMultiWitness": "Multi-Witness Confirmed Crash",
+      "scenarioMultiWitnessDesc": "5 nearby drivers confirm 'Yes, crash on highway' → instant 100% witness-confirmed escalation.",
+      "witnessesConfirmedBadge": "{count} witnesses confirmed",
+      "isolatedBadge": "Isolated zone · 0 witnesses",
+      "hospitalsSectionTitle": "Receiving Hospitals & Capacity",
+      "hospitalCapacity": {
+        "optimal": "Optimal Capacity",
+        "busy": "High Load · Limited",
+        "saturated": "Saturated · Critical Only",
+        "divert": "On Diversion · Full"
+      },
+      "edBeds": "ED Beds",
+      "icuBays": "ICU / Shock Bays",
+      "occupancy": "Occupancy",
+      "orReady": "OR Ready",
+      "orBusy": "OR Occupied",
+      "dispatchUnitToHospital": "Dispatch Unit to Facility",
+      "dispatchedToHospital": "Unit Routed to Facility",
+      "diversionWarning": "Facility on diversion (0 beds)",
+      "trackingTitle": "Live Unit Telemetry",
+      "trackUnitBtn": "Track on Map",
+      "trackingActive": "Tracking Active",
+      "routeProgress": "Route progress",
+      "unitSpeed": "{speed} km/h"
     }
   },
   "severity": {

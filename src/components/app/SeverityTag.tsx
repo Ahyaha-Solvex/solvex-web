@@ -34,6 +34,7 @@ export function SeverityTag({
 }: SeverityTagProps) {
   const t = useTranslations('severity');
   const tCommon = useTranslations('common');
+  const tHospital = useTranslations('hospital');
 
   const config = {
     low: {
@@ -44,7 +45,7 @@ export function SeverityTag({
     },
     medium: {
       color: 'var(--sev-medium)',
-      textColor: '#14201A',
+      textColor: 'var(--ink)',
       icon: <InfoCircleFilled />,
       label: t('medium'),
     },
@@ -63,9 +64,9 @@ export function SeverityTag({
   }[severity];
 
   const sizeClasses = {
-    small: 'text-xs px-3 py-1.5 min-h-[28px] rounded-md gap-1.5',
-    middle: 'text-xs px-3.5 py-2 min-h-[34px] rounded-lg font-semibold gap-2',
-    large: 'text-sm px-4 py-2.5 min-h-[40px] rounded-lg font-bold gap-2.5',
+    small: 'text-xs px-2.5 py-1 min-h-[24px] rounded-sm gap-1.5 font-semibold',
+    middle: 'text-xs px-3 py-1.5 min-h-[32px] rounded-md font-semibold gap-2',
+    large: 'text-base px-4 py-2 min-h-[40px] rounded-md font-semibold gap-2',
   }[size];
 
   const tagContent = (
@@ -75,18 +76,18 @@ export function SeverityTag({
         borderColor: disabled ? 'var(--border)' : config.color,
         color: disabled ? 'var(--muted)' : config.textColor,
       }}
-      className={`m-0 border inline-flex items-center transition-all shadow-xs select-none whitespace-nowrap ${
+      className={`m-0 border inline-flex items-center transition-all shadow-1 select-none whitespace-nowrap ${
         disabled ? 'opacity-60 cursor-not-allowed' : ''
       } ${sizeClasses} ${className}`}
     >
       {showIcon && (
-        <span className="inline-flex items-center justify-center shrink-0 text-[1.1em]">
+        <span className="inline-flex items-center justify-center shrink-0 text-[1.05em]">
           {config.icon}
         </span>
       )}
       <span className="leading-none">{config.label}</span>
       {rankingScore !== undefined && size === 'small' && (
-        <span className="font-mono opacity-90 ms-1 text-[10px]">
+        <span className="font-mono opacity-90 ms-1 text-[11px] tabular-nums">
           ({Math.round(rankingScore * 100)}%)
         </span>
       )}
@@ -95,25 +96,27 @@ export function SeverityTag({
 
   if (size === 'large' || showCaption || (escalatedBy && escalatedBy.length > 0)) {
     return (
-      <div className="space-y-1.5 inline-block">
-        <div className="flex items-center gap-2.5 flex-wrap">
+      <div className="space-y-2 inline-block">
+        <div className="flex items-center gap-3 flex-wrap">
           {tagContent}
           {rankingScore !== undefined && (
-            <span className="font-mono text-sm font-semibold text-ink">
-              Ranking score {Math.round(rankingScore * 100)}%
+            <span className="font-mono text-sm font-semibold text-ink tabular-nums">
+              {tHospital('rankingScore')} {Math.round(rankingScore * 100)}%
             </span>
           )}
         </div>
 
         {escalatedBy && escalatedBy.length > 0 && (
-          <div className="text-xs text-sev-high font-medium flex items-center gap-1">
+          <div className="text-xs text-sev-high font-medium flex items-center gap-1.5">
             <WarningFilled />
-            <span>Raised one level by: {escalatedBy.join(', ')}</span>
+            <span>
+              {tHospital('raisedBy')}: {escalatedBy.join(', ')}
+            </span>
           </div>
         )}
 
         {showCaption && (
-          <p className="text-[11px] text-muted italic">
+          <p className="text-xs text-muted">
             {tCommon('medicalDisclaimer')}
           </p>
         )}

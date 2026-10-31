@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, OrbitControls, useGLTF, Html, PerformanceMonitor } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { useTranslations } from 'next-intl';
 import * as THREE from 'three';
 
 import { useUiStore } from '@/lib/stores/uiStore';
@@ -174,11 +175,89 @@ function BodyModel({
 }
 
 /**
- * Single Glowing Anchor Sphere with Pulse & Expanding Rings
+ * Clinical 3D Scanner Pedestal beneath the patient twin
+ */
+function ScannerPedestal() {
+  return (
+    <group position={[0, -0.905, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* Subtle translucent base disc */}
+      <mesh>
+        <circleGeometry args={[0.56, 64]} />
+        <meshBasicMaterial
+          color="#0B6BAF"
+          transparent
+          opacity={0.09}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Outer calibration ring */}
+      <mesh>
+        <ringGeometry args={[0.55, 0.565, 64]} />
+        <meshBasicMaterial
+          color="#3898EC"
+          transparent
+          opacity={0.45}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Mid dashed-style reference ring */}
+      <mesh>
+        <ringGeometry args={[0.37, 0.38, 48]} />
+        <meshBasicMaterial
+          color="#3898EC"
+          transparent
+          opacity={0.28}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Inner core ring */}
+      <mesh>
+        <ringGeometry args={[0.18, 0.188, 32]} />
+        <meshBasicMaterial
+          color="#3898EC"
+          transparent
+          opacity={0.22}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Cross-axis alignment lines */}
+      <mesh>
+        <planeGeometry args={[1.22, 0.006]} />
+        <meshBasicMaterial
+          color="#3898EC"
+          transparent
+          opacity={0.22}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <planeGeometry args={[1.22, 0.006]} />
+        <meshBasicMaterial
+          color="#3898EC"
+          transparent
+          opacity={0.22}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/**
+ * Single Glowing Anchor Sphere with Pulse & Billboarded Target Rings
  */
 function AnchorSphere({
   anchor,
   level,
+  probability,
+  regionLabel,
+  levelLabel,
   isHovered,
   isSelected,
   onHover,
@@ -187,6 +266,9 @@ function AnchorSphere({
 }: {
   anchor: BodyRegionAnchor;
   level: M4Level;
+  probability: number;
+  regionLabel: string;
+  levelLabel: string;
   isHovered: boolean;
   isSelected: boolean;
   onHover: (hovered: boolean) => void;
@@ -195,6 +277,7 @@ function AnchorSphere({
 }) {
   const sphereRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
+  const selectRingRef = useRef<THREE.Mesh>(null);
 
   const colorHex = useMemo(() => {
     if (isCalibrating) return '#00E575';
@@ -205,36 +288,48 @@ function AnchorSphere({
 
   const color = useMemo(() => new THREE.Color(colorHex), [colorHex]);
 
-  useFrame(() => {
+  useFrame((state) => {
     const t = performance.now() * 0.001;
 
-    if (sphereRef.current && isCalibrating) {
-      if (level === 'likely') {
-        // Pulse period 1.0s, opacity 0.35 <-> 0.75
-        const opacity = 0.55 + 0.2 * Math.sin(t * Math.PI * 2);
-        (sphereRef.current.material as THREE.MeshBasicMaterial).opacity = opacity;
+    if (sphereRef.current) {
+      const mat = sphereRef.current.material as THREE.MeshBasicMaterial;
+      if (isCalibrating) {
+        mat.opacity = 0.5;
+      } else if (isHovered || isSelected) {
+        mat.opacity = 0.34;
+      } else if (level === 'likely') {
+        // Pulse period 1.0s, opacity 0.16 <-> 0.34
+        mat.opacity = 0.25 + 0.09 * Math.sin(t * Math.PI * 2);
       } else if (level === 'check') {
-        // Pulse period 1.6s, opacity 0.25 <-> 0.55
-        const opacity = 0.40 + 0.15 * Math.sin((t * Math.PI * 2) / 1.6);
-        (sphereRef.current.material as THREE.MeshBasicMaterial).opacity = opacity;
+        // Pulse period 1.6s, opacity 0.10 <-> 0.22
+        mat.opacity = 0.16 + 0.06 * Math.sin((t * Math.PI * 2) / 1.6);
+      } else {
+        mat.opacity = 0.15;
       }
     }
 
-    if (ringRef.current && level === 'likely') {
-      // Expanding ring: scale 1 -> 2, opacity 0.6 -> 0, period 1.4s
-      const progress = (t % 1.4) / 1.4;
-      const ringScale = 1 + progress;
-      ringRef.current.scale.setScalar(ringScale);
-      const ringOpacity = 0.6 * (1 - progress);
-      (ringRef.current.material as THREE.MeshBasicMaterial).opacity = ringOpacity;
+    if (ringRef.current) {
+      ringRef.current.quaternion.copy(state.camera.quaternion);
+      if (level === 'likely') {
+        // Expanding ring: scale 1 -> 1.85, opacity 0.65 -> 0, period 1.4s
+        const progress = (t % 1.4) / 1.4;
+        const ringScale = 1 + progress * 0.85;
+        ringRef.current.scale.setScalar(ringScale);
+        const ringOpacity = 0.65 * (1 - progress);
+        (ringRef.current.material as THREE.MeshBasicMaterial).opacity = ringOpacity;
+      }
+    }
+
+    if (selectRingRef.current) {
+      selectRingRef.current.quaternion.copy(state.camera.quaternion);
     }
   });
 
   const isVisible = isCalibrating || level !== 'unlikely' || isHovered || isSelected;
-  const currentRadius = isHovered ? anchor.radius * 1.15 : anchor.radius;
+  const currentRadius = isHovered || isSelected ? anchor.radius * 1.15 : anchor.radius;
 
-  // Render 4px dot when unlikely and hovered
-  const displayRadius = level === 'unlikely' && !isCalibrating ? 0.025 : currentRadius;
+  // Render subtle node when unlikely and hovered
+  const displayRadius = level === 'unlikely' && !isCalibrating ? 0.032 : currentRadius;
 
   if (!isVisible) return null;
 
@@ -242,7 +337,7 @@ function AnchorSphere({
 
   return (
     <group position={anchor.position}>
-      {/* Primary Glowing Additive Sphere */}
+      {/* Primary Glowing Volumetric Sphere */}
       <mesh
         ref={sphereRef}
         renderOrder={10}
@@ -259,28 +354,29 @@ function AnchorSphere({
           onSelect();
         }}
       >
-        <sphereGeometry args={[displayRadius, 20, 20]} />
+        <sphereGeometry args={[displayRadius, 24, 24]} />
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={isCalibrating ? 0.5 : 0}
+          opacity={isCalibrating ? 0.5 : 0.22}
+          blending={THREE.AdditiveBlending}
           depthWrite={false}
           depthTest={false}
         />
       </mesh>
 
-      {/* Solid core: readable on a light page, always in front of the body */}
-      {level !== 'unlikely' && !isCalibrating && (
+      {/* Crisp anatomical core node */}
+      {(level !== 'unlikely' || isHovered || isSelected) && !isCalibrating && (
         <mesh renderOrder={11}>
-          <sphereGeometry args={[0.012, 16, 16]} />
-          <meshBasicMaterial color={color} depthWrite={false} depthTest={false} transparent />
+          <sphereGeometry args={[isHovered || isSelected ? 0.022 : 0.016, 16, 16]} />
+          <meshBasicMaterial color={color} depthWrite={false} depthTest={false} transparent opacity={0.95} />
         </mesh>
       )}
 
-      {/* Expanding Ring for 'likely' severe injuries */}
+      {/* Billboarded Expanding Ring for 'likely' severe injuries */}
       {level === 'likely' && !isCalibrating && (
         <mesh ref={ringRef} renderOrder={10}>
-          <ringGeometry args={[anchor.radius * 0.95, anchor.radius * 1.15, 32]} />
+          <ringGeometry args={[anchor.radius * 0.88, anchor.radius * 1.04, 36]} />
           <meshBasicMaterial
             color={color}
             transparent
@@ -292,15 +388,16 @@ function AnchorSphere({
         </mesh>
       )}
 
-      {/* Persistent Selection Ring */}
-      {isSelected && (
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[anchor.radius * 1.25, anchor.radius * 1.4, 32]} />
+      {/* Billboarded Persistent Selection / Hover Reticle Ring */}
+      {(isSelected || isHovered) && (
+        <mesh ref={selectRingRef} renderOrder={12}>
+          <ringGeometry args={[anchor.radius * 1.12, anchor.radius * 1.24, 36]} />
           <meshBasicMaterial
             color={new THREE.Color('#FFFFFF')}
             transparent
-            opacity={0.85}
+            opacity={isSelected ? 0.92 : 0.55}
             depthWrite={false}
+            depthTest={false}
             side={THREE.DoubleSide}
           />
         </mesh>
@@ -312,23 +409,26 @@ function AnchorSphere({
           center
           transform={false}
           style={{ pointerEvents: 'none', userSelect: 'none' }}
-          position={[0, anchor.radius + 0.05, 0]}
+          position={[0, anchor.radius + 0.06, 0]}
         >
           <div
-            className="px-2.5 py-1 rounded-md text-[12px] font-sans font-medium whitespace-nowrap shadow-xl border flex items-center gap-1.5 backdrop-blur-md"
+            className="px-3 py-1.5 rounded-lg text-[12px] font-sans font-semibold whitespace-nowrap shadow-2xl border flex items-center gap-2 backdrop-blur-md"
             style={{
-              backgroundColor: 'rgba(11, 19, 16, 0.92)',
+              backgroundColor: 'rgba(7, 17, 28, 0.94)',
               borderColor: colorHex,
               color: '#FFFFFF',
             }}
           >
             <span
-              className="w-2 h-2 rounded-full shrink-0"
+              className="w-2.5 h-2.5 rounded-full shrink-0"
               style={{ backgroundColor: colorHex }}
             />
-            <span className="capitalize">{anchor.id.replace('_', ' ')}</span>
-            <span className="text-[10px] font-mono uppercase opacity-85 px-1 py-0.5 rounded bg-white/10">
-              {level}
+            <span>{regionLabel}</span>
+            <span className="font-mono text-[11px] font-bold opacity-95">
+              {Math.round(probability * 100)}%
+            </span>
+            <span className="text-[10px] font-mono uppercase opacity-85 px-1.5 py-0.5 rounded bg-white/15">
+              {levelLabel}
             </span>
           </div>
         </Html>
@@ -511,11 +611,12 @@ export function Body3D({
   onProject,
   projectSide = 'r',
 }: Body3DProps) {
+  const tRegions = useTranslations('regions');
   const { hoveredRegion, selectedRegion, setHoveredRegion, setSelectedRegion } =
     useUiStore();
 
   const [enableBloom, setEnableBloom] = useState(false);   // bloom needs an opaque canvas
-  const [dpr, setDpr] = useState<number>(1);
+  const [dpr, setDpr] = useState<number>(1.25);
   const [isTabVisible, setIsTabVisible] = useState(true);
 
   // Pause render loops when the tab is hidden (GEMINI.md Rule 11)
@@ -556,25 +657,28 @@ export function Body3D({
           }}
         />
 
-        {/* Stage Lighting (SPEC_3D line 7) */}
+        {/* Clinical Stage Lighting (SPEC_3D line 7) */}
         <hemisphereLight
-          args={[new THREE.Color('#FFFFFF'), new THREE.Color('#B8B2A6'), 1.9]}
+          args={[new THREE.Color('#DCEBFA'), new THREE.Color('#0A1524'), 1.35]}
         />
         <directionalLight
-          position={[-3, 4, 3]}
-          intensity={1.5}
+          position={[-3, 4, 3.5]}
+          intensity={1.65}
           castShadow={enableBloom}
         />
         <directionalLight
-          position={[0, 2, -4]}
-          intensity={0.5}
-          color="#A8BDB4"
+          position={[2.5, 2.5, -4]}
+          intensity={0.85}
+          color="#64B5F6"
         />
+
+        {/* 3D Clinical Scanner Pedestal */}
+        <ScannerPedestal />
 
         {/* 3D Body Mesh with Model Loader & Fallback */}
         <Suspense fallback={<FallbackMannequin isEmpty={isEmpty} />}>
           <BodyModel isEmpty={isEmpty} occupant={occupant} anchors={anchors} />
-          <ContactShadows position={[0, -0.9, 0]} opacity={0.4} scale={2.4} blur={2.2} far={1} frames={1} />
+          <ContactShadows position={[0, -0.9, 0]} opacity={0.55} scale={2.4} blur={2.0} far={1.2} frames={1} />
         </Suspense>
 
         {onProject && <Projector anchors={anchors} side={projectSide} onProject={onProject} />}
@@ -582,7 +686,9 @@ export function Body3D({
         {/* Glowing Anchors */}
         {!isEmpty &&
           anchors.map((anchor, index) => {
-            const level: M4Level = occupant?.m4?.[anchor.id]?.level ?? 'unlikely';
+            const m4Entry = occupant?.m4?.[anchor.id];
+            const level: M4Level = m4Entry?.level ?? 'unlikely';
+            const probability = m4Entry?.probability ?? 0;
             const isHovered = hoveredRegion === anchor.id;
             const isSelected = selectedRegion === anchor.id;
 
@@ -591,6 +697,9 @@ export function Body3D({
                 key={`${anchor.id}-${anchor.side || 'c'}-${index}`}
                 anchor={anchor}
                 level={level}
+                probability={probability}
+                regionLabel={tRegions(anchor.id)}
+                levelLabel={tRegions(level)}
                 isHovered={isHovered}
                 isSelected={isSelected}
                 onHover={(hovered) => setHoveredRegion(hovered ? anchor.id : null)}

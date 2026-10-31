@@ -14,6 +14,7 @@ export interface IncidentSource {
   callContact(incidentId: string, who: 'driver' | 'contact'): void;
   setTriage(incidentId: string, occupantId: string, color: TriageColor): void;
   assignHospital(incidentId: string, occupantId: string, hospitalId: string): void;
+  dispatchToHospital(incidentId: string, hospitalId: string, ambulanceId?: string): void;
   reportPhoneCall(report: PhoneReport): string; // returns the new incident's id
   warnDriver(incidentId: string, message: 'dont_go' | 'no_help'): void;
   acknowledge(incidentId: string): void;
@@ -28,4 +29,6 @@ export interface IncidentSource {
   triggerUserOk(): void;
   triggerSos(): void;
   startDeadZone(): void;
+  triggerIsolatedCrash(): void;
+  triggerMultiWitnessCrash(): void;
 }

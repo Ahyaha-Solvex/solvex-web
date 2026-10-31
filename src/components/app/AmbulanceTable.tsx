@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Table, Tag, Button } from 'antd';
+import { Table, Button } from 'antd';
 import { CarOutlined, CheckOutlined } from '@ant-design/icons';
+import { useTranslations } from 'next-intl';
 import type { Ambulance } from '@/lib/data/types';
 
 export interface AmbulanceTableProps {
@@ -20,27 +21,58 @@ export function AmbulanceTable({
   loading = false,
   className = '',
 }: AmbulanceTableProps) {
+  const t = useTranslations('responder');
+  const tw = useTranslations('responder.workspace');
+  const tStatus = useTranslations('status');
 
-  const statusConfig: Record<Ambulance['status'], { color: string; label: string }> = {
-    available: { color: 'success', label: 'Disponible' },
-    assigned: { color: 'processing', label: 'Assigné' },
-    en_route: { color: 'processing', label: 'En route' },
-    on_scene: { color: 'warning', label: 'Sur les lieux' },
-    transporting: { color: 'purple', label: 'Évacuation' },
+  const statusStyles: Record<
+    Ambulance['status'],
+    { bg: string; border: string; text: string; label: string }
+  > = {
+    available: {
+      bg: 'var(--brand-subtle)',
+      border: 'var(--brand)',
+      text: 'var(--brand-press)',
+      label: tStatus('detected'),
+    },
+    assigned: {
+      bg: 'var(--brand-subtle)',
+      border: 'var(--brand)',
+      text: 'var(--brand)',
+      label: tStatus('dispatched'),
+    },
+    en_route: {
+      bg: 'var(--brand-subtle)',
+      border: 'var(--brand)',
+      text: 'var(--brand)',
+      label: tStatus('dispatched'),
+    },
+    on_scene: {
+      bg: 'rgba(217, 164, 0, 0.14)',
+      border: 'var(--sev-medium)',
+      text: 'var(--ink)',
+      label: tStatus('on_scene'),
+    },
+    transporting: {
+      bg: 'var(--brand)',
+      border: 'var(--brand-press)',
+      text: '#FFFFFF',
+      label: tStatus('transporting'),
+    },
   };
 
   const columns = [
     {
-      title: 'Unité PC',
+      title: tw('unit'),
       dataIndex: 'id',
       key: 'id',
       render: (id: string, record: Ambulance) => (
-        <div className="space-y-0.5">
+        <div className="space-y-0.5 py-0.5">
           <span className="font-mono text-xs font-bold text-ink flex items-center gap-1.5">
             <CarOutlined className="text-brand" />
             {id}
           </span>
-          <span className="text-[11px] text-muted block truncate max-w-[160px]">
+          <span className="text-xs text-muted block truncate max-w-[180px]">
             {record.unit}
           </span>
         </div>
@@ -53,28 +85,39 @@ export function AmbulanceTable({
       render: (etaSeconds?: number) => {
         const mins = Math.round((etaSeconds || 660) / 60);
         return (
-          <span className="font-mono text-xs font-semibold tabular-nums text-brand">
+          <span
+            className="font-mono text-xs font-bold tabular-nums text-brand"
+            dir="ltr"
+          >
             {mins} min
           </span>
         );
       },
     },
     {
-      title: 'Statut',
+      title: tw('progress'),
       dataIndex: 'status',
       key: 'status',
       render: (status: Ambulance['status']) => {
-        const conf = statusConfig[status] || statusConfig.available;
+        const conf = statusStyles[status] || statusStyles.available;
         return (
-          <Tag color={conf.color} className="m-0 text-[10px] font-medium">
-            {conf.label}
-          </Tag>
+          <span
+            style={{
+              backgroundColor: conf.bg,
+              borderColor: conf.border,
+              color: conf.text,
+            }}
+            className="inline-flex items-center px-2 py-0.5 rounded-sm border text-[11px] font-semibold"
+          >
+            {status === 'available' ? 'Available' : conf.label}
+          </span>
         );
       },
     },
     {
-      title: 'Action',
+      title: '',
       key: 'action',
+      align: 'end' as const,
       render: (_: unknown, record: Ambulance) => {
         const isAssigned = record.id === assignedId || record.status === 'assigned';
         const isAvailable = record.status === 'available' || isAssigned;
@@ -86,9 +129,9 @@ export function AmbulanceTable({
             disabled={!isAvailable}
             icon={isAssigned ? <CheckOutlined /> : undefined}
             onClick={() => onAssign?.(record.id)}
-            className="text-xs"
+            className="text-xs font-semibold"
           >
-            {isAssigned ? 'Assigné' : 'Dépêcher'}
+            {isAssigned ? t('assignedAmbulance') : t('actions.assignAmbulance')}
           </Button>
         );
       },

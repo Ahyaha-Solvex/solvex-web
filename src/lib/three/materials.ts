@@ -68,8 +68,8 @@ export interface HeatUniforms {
 }
 
 /**
- * Pale body for a light page: injury estimates are painted on the skin as heat
- * with moving contour lines, revealed by a scan line.
+ * Clinical 3D anatomical body material: injury estimates are painted on the surface as heat
+ * with animated iso-contour rings and a fresnel clinical rim light, revealed by an axial scan line.
  */
 export function createHeatBodyMaterial(): { material: THREE.MeshStandardMaterial; uniforms: HeatUniforms } {
   const uniforms: HeatUniforms = {
@@ -80,8 +80,11 @@ export function createHeatBodyMaterial(): { material: THREE.MeshStandardMaterial
     uTime: { value: 0 },
   };
 
-  const material = new THREE.MeshStandardMaterial({ color: '#E4E7E2', roughness: 0.62, metalness: 0 });
-  material.toneMapped = false;
+  const material = new THREE.MeshStandardMaterial({
+    color: '#CBD6E2',
+    roughness: 0.44,
+    metalness: 0.08,
+  });
 
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
@@ -110,22 +113,22 @@ export function createHeatBodyMaterial(): { material: THREE.MeshStandardMaterial
         float heatDistance = 0.0;
         for (int i = 0; i < HEAT_SLOTS; i++) {
           float d = distance(vHeatPos, uHeat[i].xyz);
-          float amount = uHeatGain[i] * (1.0 - smoothstep(uHeat[i].w * 0.3, uHeat[i].w * 1.35, d));
+          float amount = uHeatGain[i] * (1.0 - smoothstep(uHeat[i].w * 0.2, uHeat[i].w * 1.45, d));
           if (amount > heat) {
             heat = amount;
             heatColor = uHeatColor[i];
             heatDistance = d;
           }
         }
-        float contour = 0.5 + 0.5 * sin(heatDistance * 110.0 - uTime * 5.0);
-        heat *= (0.72 + 0.28 * contour) * step(uScan, vHeatPos.y);
-        outgoingLight = mix(outgoingLight, heatColor, clamp(heat * 1.15, 0.0, 1.0));
+        float contour = 0.5 + 0.5 * sin(heatDistance * 105.0 - uTime * 4.5);
+        heat *= (0.76 + 0.24 * contour) * step(uScan, vHeatPos.y);
+        outgoingLight = mix(outgoingLight, heatColor * 1.25, clamp(heat * 1.15, 0.0, 1.0));
 
         float rim = 1.0 - max(dot(normalize(vNormal), normalize(vViewPosition)), 0.0);
-        outgoingLight = mix(outgoingLight, vec3(0.08, 0.2, 0.14), smoothstep(0.55, 1.0, rim) * 0.6);
+        outgoingLight += vec3(0.14, 0.52, 0.86) * smoothstep(0.45, 1.0, rim) * 0.65;
 
-        float scanBand = exp(-pow((vHeatPos.y - uScan) * 34.0, 2.0));
-        outgoingLight = mix(outgoingLight, vec3(0.0, 0.38, 0.2), scanBand * 0.9);
+        float scanBand = exp(-pow((vHeatPos.y - uScan) * 32.0, 2.0));
+        outgoingLight = mix(outgoingLight, vec3(0.22, 0.68, 0.98), scanBand * 0.92);
         #include <opaque_fragment>`
       );
   };

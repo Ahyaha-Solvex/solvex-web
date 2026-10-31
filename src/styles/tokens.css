@@ -76,19 +76,23 @@
   }
 }
 
-/* Hospital: clinical blue in place of the flag green */
+/* Hospital: unified Saharan Paper & Algerian Emerald palette */
 .theme-medical {
-  --bg: #F3F7FB;
+  --bg: #FAF8F3;
   --surface: #FFFFFF;
-  --surface-2: #EDF3F9;
-  --border: #DCE5EE;
-  --border-strong: #C6D4E1;
-  --ink: #0F1F2E;
-  --ink-2: #34495E;
-  --muted: #5A6D80;
-  --brand: #0B6BAF;
-  --brand-hover: #0E7DC9;
-  --brand-press: #08548A;
-  --brand-subtle: #E3EFF9;
-  --sev-low: #1F8A70;
+  --surface-2: #F3F0E8;
+  --border: #E6E1D5;
+  --border-strong: #D3CCBB;
+  --ink: #14201A;
+  --ink-2: #3B4740;
+  --muted: #5C675F;
+  --brand: #006233;
+  --brand-hover: #007A41;
+  --brand-press: #004D28;
+  --brand-subtle: #E6F1EA;
+  --sev-low: #2A7F6F;
+  --stage-bg: #0B1310;
+  --stage-grid: rgba(255, 255, 255, 0.06);
+  --stage-ink: #E8EEEA;
+  --stage-muted: #8FA097;
 }
