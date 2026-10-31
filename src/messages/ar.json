@@ -274,6 +274,7 @@
     "volunteersCount": "متطوعون",
     "viewScene": "مشهد ثلاثي الأبعاد",
     "viewMap": "الخريطة",
+    "pipMap": "شاشة كاملة",
     "selectIncidentPrompt": "اختر حادثاً من القائمة لمعاينة القياسات عن بعد وبيانات الفرز.",
     "actions": {
       "confirm": "تأكيد الحادث",

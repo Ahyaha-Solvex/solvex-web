@@ -274,6 +274,7 @@
     "volunteersCount": "Volunteers",
     "viewScene": "3D Scene",
     "viewMap": "Map",
+    "pipMap": "Fullscreen Map",
     "selectIncidentPrompt": "Select an incident from the queue to inspect 3D telemetry and triage details.",
     "actions": {
       "confirm": "Confirm Crash",

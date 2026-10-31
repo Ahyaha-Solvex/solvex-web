@@ -274,6 +274,7 @@
     "volunteersCount": "Bénévoles",
     "viewScene": "Scène 3D",
     "viewMap": "Carte",
+    "pipMap": "Plein écran",
     "selectIncidentPrompt": "Sélectionnez un incident dans la file pour inspecter la télémétrie 3D et le triage.",
     "actions": {
       "confirm": "Confirmer le crash",
