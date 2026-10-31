@@ -5,6 +5,7 @@ import { GET as getBackendState } from '@/app/api/backend/state/route';
 import { POST as postBackendAction } from '@/app/api/backend/action/route';
 import { routing } from '@/i18n/routing';
 import { config as middlewareConfig } from '@/middleware';
+import { useBreakdownStore } from '@/lib/stores/breakdownStore';
 import type { Ambulance, Incident } from '@/lib/data/types';
 
 interface BackendStateResponse {
@@ -222,6 +223,7 @@ describe('API & App Routes Test Suite', () => {
         '[locale]/(app)/page.tsx',
         '[locale]/(app)/responder/page.tsx',
         '[locale]/(app)/hospital/page.tsx',
+        '[locale]/(app)/breakdown/page.tsx',
         '[locale]/(marketing)/landing/page.tsx',
         '[locale]/(app)/lab/data/page.tsx',
         '[locale]/(app)/lab/body/page.tsx',
@@ -242,6 +244,53 @@ describe('API & App Routes Test Suite', () => {
         'utf-8'
       );
       expect(landingSource).not.toMatch(/from\s+['"]antd['"]/);
+    });
+  });
+
+  describe('On-Demand Breakdown & Towing Service Store', () => {
+    it('initializes with seed requests, available provider, and selected request', () => {
+      const state = useBreakdownStore.getState();
+      expect(state.provider.unitCode).toBe('DEP-07');
+      expect(state.requests['req-001']).toBeDefined();
+      expect(state.requests['req-001'].status).toBe('pending');
+      expect(state.requests['req-001'].routeCoordinates.length).toBeGreaterThan(1);
+    });
+
+    it('accepts a request, marks provider busy, and updates mission to en_route', () => {
+      const { acceptRequest } = useBreakdownStore.getState();
+      acceptRequest('req-001');
+
+      const updated = useBreakdownStore.getState();
+      expect(updated.activeMissionId).toBe('req-001');
+      expect(updated.requests['req-001'].status).toBe('en_route');
+      expect(updated.provider.status).toBe('busy');
+      expect(updated.isTrackingTowTruck).toBe(true);
+    });
+
+    it('advances route progress via tickRouteProgress and completes mission', () => {
+      const { tickRouteProgress, completeMission } = useBreakdownStore.getState();
+      tickRouteProgress();
+
+      const progressing = useBreakdownStore.getState();
+      expect(progressing.requests['req-001'].currentProgress).toBeGreaterThan(0.05);
+
+      const initialEarnings = progressing.earningsDzd;
+      const fee = progressing.requests['req-001'].priceDzd;
+      completeMission('req-001');
+
+      const completed = useBreakdownStore.getState();
+      expect(completed.activeMissionId).toBeNull();
+      expect(completed.requests['req-001'].status).toBe('completed');
+      expect(completed.earningsDzd).toBe(initialEarnings + fee);
+      expect(completed.provider.status).toBe('available');
+    });
+
+    it('declines a request and removes it from active consideration', () => {
+      const { declineRequest } = useBreakdownStore.getState();
+      declineRequest('req-002');
+
+      const updated = useBreakdownStore.getState();
+      expect(updated.requests['req-002'].status).toBe('declined');
     });
   });
 });

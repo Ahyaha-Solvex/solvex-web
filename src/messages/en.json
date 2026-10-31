@@ -206,6 +206,7 @@
     "viewFree": "Free",
     "roleResponder": "Responder",
     "roleHospital": "Hospital",
+    "roleBreakdown": "Breakdown",
     "ambulance": "Ambulance",
     "route": "Route",
     "minSec": "min:sec",
@@ -456,5 +457,49 @@
     "transporting": "Transporting",
     "at_hospital": "At Hospital",
     "closed": "Closed"
+  },
+  "breakdown": {
+    "roleBreakdown": "Breakdown",
+    "subHeader": "Roadside Assistance & 24/7 Towing",
+    "online": "Online",
+    "offline": "Offline",
+    "simulateRequest": "+ Simulate Request",
+    "earnings": "Session Earnings",
+    "filterAll": "All",
+    "filterPending": "Pending",
+    "filterActive": "Active",
+    "noRequests": "No breakdown requests in this sector",
+    "centerTowTruck": "Center on Tow Truck",
+    "callDriver": "Call Driver",
+    "callingDriver": "Calling Driver",
+    "distance": "Distance",
+    "eta": "ETA",
+    "statusLabel": "Status",
+    "enRoute": "Tow Truck En Route",
+    "onScene": "On Scene with Vehicle",
+    "accept": "Accept Request",
+    "decline": "Decline",
+    "completeTowing": "Complete Towing",
+    "cancelMission": "Cancel Mission",
+    "missionAccepted": "Request Accepted",
+    "navigationStartedDesc": "Road route drawn to {name}. Tow truck en route.",
+    "missionDeclined": "Request Declined",
+    "missionDeclinedDesc": "The request has been rerouted to partner networks.",
+    "missionCompleted": "Mission completed & fee settled",
+    "issueTypes": {
+      "engine": "Engine Failure",
+      "flat_tire": "Flat Tire",
+      "battery": "Dead Battery",
+      "overheat": "Overheating",
+      "accident_minor": "Minor Collision"
+    },
+    "statuses": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "en_route": "En Route",
+      "on_scene": "On Scene",
+      "completed": "Completed",
+      "declined": "Declined"
+    }
   }
 }

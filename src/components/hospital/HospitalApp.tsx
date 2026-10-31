@@ -511,12 +511,14 @@ export function HospitalApp() {
 
         <Segmented
           value="hospital"
-          onChange={(role) =>
-            role === 'responder' && router.push(`/${locale}/responder`)
-          }
+          onChange={(role) => {
+            if (role === 'responder') router.push(`/${locale}/responder`);
+            if (role === 'breakdown') router.push(`/${locale}/breakdown`);
+          }}
           options={[
             { label: t('roleResponder'), value: 'responder' },
             { label: t('roleHospital'), value: 'hospital' },
+            { label: t('roleBreakdown'), value: 'breakdown' },
           ]}
         />
 

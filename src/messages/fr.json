@@ -206,6 +206,7 @@
     "viewFree": "Libre",
     "roleResponder": "Secouriste",
     "roleHospital": "Hôpital",
+    "roleBreakdown": "Dépannage",
     "ambulance": "Ambulance",
     "route": "Itinéraire",
     "minSec": "min:sec",
@@ -456,5 +457,49 @@
     "transporting": "En transport",
     "at_hospital": "Aux urgences",
     "closed": "Clôturé"
+  },
+  "breakdown": {
+    "roleBreakdown": "Dépannage",
+    "subHeader": "Assistance routière & remorquage 24/7",
+    "online": "En service",
+    "offline": "Hors service",
+    "simulateRequest": "+ Simuler une demande",
+    "earnings": "Revenus session",
+    "filterAll": "Toutes",
+    "filterPending": "En attente",
+    "filterActive": "En cours",
+    "noRequests": "Aucune demande de dépannage dans ce secteur",
+    "centerTowTruck": "Centrer sur la dépanneuse",
+    "callDriver": "Appeler l'automobiliste",
+    "callingDriver": "Appel en cours",
+    "distance": "Distance",
+    "eta": "Arrivée",
+    "statusLabel": "Statut",
+    "enRoute": "Dépanneuse en route",
+    "onScene": "Sur place avec le véhicule",
+    "accept": "Accepter la course",
+    "decline": "Refuser",
+    "completeTowing": "Terminer le remorquage",
+    "cancelMission": "Annuler la mission",
+    "missionAccepted": "Demande acceptée",
+    "navigationStartedDesc": "Itinéraire tracé vers {name}. Dépanneuse en route.",
+    "missionDeclined": "Demande refusée",
+    "missionDeclinedDesc": "La demande a été réassignée au réseau partenaire.",
+    "missionCompleted": "Mission terminée & facture encaissée",
+    "issueTypes": {
+      "engine": "Panne Moteur",
+      "flat_tire": "Crevaison",
+      "battery": "Batterie à plat",
+      "overheat": "Surchauffe",
+      "accident_minor": "Accrochage"
+    },
+    "statuses": {
+      "pending": "En attente",
+      "accepted": "Acceptée",
+      "en_route": "En route",
+      "on_scene": "Sur les lieux",
+      "completed": "Clôturée",
+      "declined": "Refusée"
+    }
   }
 }

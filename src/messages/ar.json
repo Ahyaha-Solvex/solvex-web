@@ -206,6 +206,7 @@
     "viewFree": "حر",
     "roleResponder": "المستجيب",
     "roleHospital": "المستشفى",
+    "roleBreakdown": "خدمة النجدة",
     "ambulance": "الإسعاف",
     "route": "المسار",
     "minSec": "دقيقة:ثانية",
@@ -456,5 +457,49 @@
     "transporting": "جاري النقل",
     "at_hospital": "وصل المستشفى",
     "closed": "مغلق"
+  },
+  "breakdown": {
+    "roleBreakdown": "خدمة النجدة",
+    "subHeader": "المساعدة على الطريق والقطر 24/7",
+    "online": "متاح للخدمة",
+    "offline": "غير متاح",
+    "simulateRequest": "+ محاكاة طلب جديد",
+    "earnings": "أرباح الجلسة",
+    "filterAll": "الكل",
+    "filterPending": "في الانتظار",
+    "filterActive": "جارية",
+    "noRequests": "لا توجد طلبات نجدة في هذا القطاع",
+    "centerTowTruck": "تمركز حول شاحنة القطر",
+    "callDriver": "الاتصال بالسائق",
+    "callingDriver": "جاري الاتصال بالسائق",
+    "distance": "المسافة",
+    "eta": "وقت الوصول",
+    "statusLabel": "الحالة",
+    "enRoute": "شاحنة القطر في الطريق",
+    "onScene": "في الموقع مع المركبة",
+    "accept": "قبول الطلب",
+    "decline": "رفض",
+    "completeTowing": "إنهاء عملية القطر",
+    "cancelMission": "إلغاء المهمة",
+    "missionAccepted": "تم قبول الطلب",
+    "navigationStartedDesc": "تم رسم مسار الطريق إلى {name}. شاحنة القطر متوجهة إليه.",
+    "missionDeclined": "تم رفض الطلب",
+    "missionDeclinedDesc": "تمت إعادة توجيه الطلب إلى شبكة النجدة المجاورة.",
+    "missionCompleted": "تمت المهمة بنجاح وتحصيل الأجرة",
+    "issueTypes": {
+      "engine": "عطل في المحرك",
+      "flat_tire": "عطل بالإطارات",
+      "battery": "بطارية فارغة",
+      "overheat": "ارتفاع حرارة المحرك",
+      "accident_minor": "حادث اصطدام خفيف"
+    },
+    "statuses": {
+      "pending": "في الانتظار",
+      "accepted": "مقبول",
+      "en_route": "في الطريق",
+      "on_scene": "في الموقع",
+      "completed": "مكتمل",
+      "declined": "مرفوض"
+    }
   }
 }
