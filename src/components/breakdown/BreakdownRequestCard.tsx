@@ -84,7 +84,7 @@ export function BreakdownRequestCard({ request, onClose }: BreakdownRequestCardP
   return (
     <Card
       className="shadow-xl rounded-2xl border-[#E2DDD3] bg-[#FAF8F3] overflow-hidden"
-      bodyStyle={{ padding: '16px' }}
+      styles={{ body: { padding: '16px' } }}
     >
       {/* Header with Client Info and Close */}
       <div className="flex items-start justify-between gap-3 pb-3 border-b border-[#E2DDD3]">
